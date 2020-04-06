@@ -1,4 +1,4 @@
-# -*- mode: python -*-
+# -*- mode: python ; coding: utf-8 -*-
 
 block_cipher = None
 
@@ -6,7 +6,7 @@ block_cipher = None
 a = Analysis(['times.py'],
              pathex=['D:\\GIT\\time'],
              binaries=[],
-             datas=[('black-plane.png', 'data'), ('time.png', 'data')],
+             datas=[('pics/*', 'pics')],
              hiddenimports=[],
              hookspath=[],
              runtime_hooks=[],
@@ -28,5 +28,6 @@ exe = EXE(pyz,
           bootloader_ignore_signals=False,
           strip=False,
           upx=True,
+          upx_exclude=[],
           runtime_tmpdir=None,
-          console=False , icon='time.ico')
+          console=False , icon='pics\\time.ico')
