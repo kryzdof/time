@@ -4,7 +4,7 @@ import os
 import shutil
 import calendar
 
-from itertools import zip_longest as zipLong
+from itertools import zip_longest
 
 try:
     from PySide2 import QtCore, QtWidgets, QtGui
@@ -69,7 +69,7 @@ class DetailTimesDialog(QtWidgets.QDialog):
         label.setAlignment(QtCore.Qt.AlignHCenter)
         mainLayout.addWidget(label, 0, 4)
 
-        for x, timestamps in zipLong(range(10), self.timeStampData, fillvalue=(0, 0)):
+        for x, timestamps in zip_longest(range(10), self.timeStampData, fillvalue=(0, 0)):
             t = QtCore.QTime(minutesInTime(timestamps[0]))
             startTimes = QtWidgets.QTimeEdit(t)
             startTimes.setDisplayFormat("hh:mm")
@@ -134,7 +134,7 @@ class DetailTimesDialog(QtWidgets.QDialog):
         self.totalTime.setText(QtCore.QTime(0, 0).addSecs(self.totalDiff).toString('h:mm'))
 
     def resetTimes(self):
-        for x, timestamps in zipLong(range(10), self.timeStampData, fillvalue=(0, 0)):
+        for x, timestamps in zip_longest(range(10), self.timeStampData, fillvalue=(0, 0)):
             t = QtCore.QTime(minutesInTime(timestamps[0]))
             self.startTimes[x].setTime(t)
             t = QtCore.QTime(minutesInTime(timestamps[1]))
@@ -446,7 +446,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     # calc diff time
                     newStart = self.starttimeTime[x].time().addSecs(seconds[dayOfWeek])
                     diff = newStart.secsTo(self.endtimeTime[x].time())
-                    if self.breakCheckBoxes[x].isChecked():
+                    if self.breakCheckBoxes[x].isChecked() and self.endtimeTime[x].time().msecsSinceStartOfDay():
                         diff -= self.config["lunchBreak"] * 60
                     if diff < 0:
                         diffTime = QtCore.QTime(0, 0).addSecs(-diff)
