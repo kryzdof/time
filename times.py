@@ -11,9 +11,6 @@ try:
 except ImportError:
     print("PySide2 not found - installing now")
     import subprocess
-
-    # subprocess.check_call([sys.executable, "-m", "pip", "install", "PySide2==5.11.2"])
-    #
     subprocess.check_call([sys.executable, "-m", "pip", "install", "PySide2==5.11.2",
                            "--index-url", r"https://eu.artifactory.conti.de/api/pypi/i_bs_ultra_tools_pypi_l/simple",
                            "--extra-index-url", "https://pypi.python.org/simple", "--no-cache-dir"])
@@ -36,12 +33,33 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 
-def timeInMinutes(time):
+def timeToMinutes(time):
     return time.hour() * 60 + time.minute()
 
 
-def minutesInTime(minutes):
+def minutesToTime(minutes):
     return QtCore.QTime(minutes // 60, minutes % 60)
+
+
+class AdvancedTimeEdit(QtWidgets.QTimeEdit):
+    connectHoursAndMinutes = False
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.setDisplayFormat("hh:mm")
+        self.setWrapping(True)
+
+    def stepBy(self, steps):
+        if self.connectHoursAndMinutes:
+            currentTime = self.time()
+            super().stepBy(steps)
+            if self.currentSection() == self.MinuteSection:
+                if currentTime.minute() == 0 and steps < 0:
+                    self.setTime(self.time().addSecs(-3600))
+                if currentTime.minute() == 59 and steps > 0:
+                    self.setTime(self.time().addSecs(3600))
+        else:
+            super().stepBy(steps)
 
 
 class DetailTimesDialog(QtWidgets.QDialog):
@@ -70,10 +88,8 @@ class DetailTimesDialog(QtWidgets.QDialog):
         mainLayout.addWidget(label, 0, 4)
 
         for x, timestamps in zip_longest(range(10), self.timeStampData, fillvalue=(0, 0)):
-            t = QtCore.QTime(minutesInTime(timestamps[0]))
-            startTimes = QtWidgets.QTimeEdit(t)
-            startTimes.setDisplayFormat("hh:mm")
-            startTimes.setWrapping(True)
+            t = QtCore.QTime(minutesToTime(timestamps[0]))
+            startTimes = AdvancedTimeEdit(t)
             startTimes.editingFinished.connect(self.updateDiffs)
             self.startTimes.append(startTimes)
             mainLayout.addWidget(startTimes, x + 1, 1)
@@ -82,10 +98,8 @@ class DetailTimesDialog(QtWidgets.QDialog):
             autoTime.clicked.connect(self.updateAutoTime)
             mainLayout.addWidget(autoTime, x + 1, 0)
 
-            t = QtCore.QTime(minutesInTime(timestamps[1]))
-            endTimes = QtWidgets.QTimeEdit(t)
-            endTimes.setDisplayFormat("hh:mm")
-            endTimes.setWrapping(True)
+            t = QtCore.QTime(minutesToTime(timestamps[1]))
+            endTimes = AdvancedTimeEdit(t)
             endTimes.editingFinished.connect(self.updateDiffs)
             self.endTimes.append(endTimes)
             mainLayout.addWidget(endTimes, x + 1, 2)
@@ -135,9 +149,9 @@ class DetailTimesDialog(QtWidgets.QDialog):
 
     def resetTimes(self):
         for x, timestamps in zip_longest(range(10), self.timeStampData, fillvalue=(0, 0)):
-            t = QtCore.QTime(minutesInTime(timestamps[0]))
+            t = QtCore.QTime(minutesToTime(timestamps[0]))
             self.startTimes[x].setTime(t)
-            t = QtCore.QTime(minutesInTime(timestamps[1]))
+            t = QtCore.QTime(minutesToTime(timestamps[1]))
             self.endTimes[x].setTime(t)
         self.updateDiffs()
 
@@ -153,53 +167,49 @@ class DetailTimesDialog(QtWidgets.QDialog):
             totalEnd = QtCore.QTime(0, 0)
         timeStamps = []
         for x in range(10):
-            timeStamps.append((timeInMinutes(self.startTimes[x].time()), timeInMinutes(self.endTimes[x].time())))
-        return timeInMinutes(totalStart), timeInMinutes(totalEnd), timeStamps
+            timeStamps.append((timeToMinutes(self.startTimes[x].time()), timeToMinutes(self.endTimes[x].time())))
+        return timeToMinutes(totalStart), timeToMinutes(totalEnd), timeStamps
 
 
 class SettingsDialog(QtWidgets.QDialog):
     def __init__(self, parent):
         super().__init__(parent=parent)
 
-        self.config = {}
-
+        self.config = self.getConfig()
         self.setWindowTitle("Settings")
         mainLayout = QtWidgets.QVBoxLayout()
 
         timeSettingsLayout = QtWidgets.QGridLayout()
         timeSettingsWidgets = QtWidgets.QGroupBox("Time Settings")
-
         for x, dayStr in enumerate([d for d in calendar.day_name]):
             label = QtWidgets.QLabel(dayStr)
             timeSettingsLayout.addWidget(label, x + 1, 0)
-
         self.workingTimes = []
         for x in range(1, 8):
-            if x < 4:
-                t = QtCore.QTime(6, 10)
-            elif x < 6:
-                t = QtCore.QTime(6, 9)
-            else:
-                t = QtCore.QTime(0, 0)
-            workingTime = QtWidgets.QTimeEdit(t)
-            workingTime.setDisplayFormat("hh:mm")
-            workingTime.setWrapping(True)
+            t = self.config["hours"][x]
+            workingTime = AdvancedTimeEdit(t)
             self.workingTimes.append(workingTime)
             timeSettingsLayout.addWidget(workingTime, x, 1)
-
         timeSettingsWidgets.setLayout(timeSettingsLayout)
 
         lunchSettingsLayout = QtWidgets.QGridLayout()
         lunchSettingsWidgets = QtWidgets.QGroupBox("Lunch Settings")
-
         label = QtWidgets.QLabel("Normal Lunch Break")
         lunchSettingsLayout.addWidget(label, 0, 0)
-        self.lunchTime = QtWidgets.QTimeEdit(QtCore.QTime(0, 30))
-        self.lunchTime.setDisplayFormat("hh:mm")
-        self.lunchTime.setWrapping(True)
+        self.lunchTime = AdvancedTimeEdit(QtCore.QTime(0, 0).addSecs(self.config["lunchBreak"] * 60))
         lunchSettingsLayout.addWidget(self.lunchTime, 0, 1)
-
         lunchSettingsWidgets.setLayout(lunchSettingsLayout)
+
+        generalSettingsLayout = QtWidgets.QGridLayout()
+        generalSettingsWidgets = QtWidgets.QGroupBox("General Settings")
+        self.autoCalcEndTime = QtWidgets.QCheckBox("Automatically forecast end time")
+        self.autoCalcEndTime.setChecked(self.config["connectHoursAndMinutes"])
+        self.hourWrapAround = QtWidgets.QCheckBox("Change hours with minutes")
+        self.hourWrapAround.setChecked(self.config["forecastEndTimes"])
+        generalSettingsLayout.addWidget(self.autoCalcEndTime, 0, 0)
+        generalSettingsLayout.addWidget(self.hourWrapAround, 1, 0)
+
+        generalSettingsWidgets.setLayout(generalSettingsLayout)
 
         buttonbox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
         buttonbox.accepted.connect(self.accept)
@@ -207,20 +217,23 @@ class SettingsDialog(QtWidgets.QDialog):
 
         mainLayout.addWidget(timeSettingsWidgets)
         mainLayout.addWidget(lunchSettingsWidgets)
+        mainLayout.addWidget(generalSettingsWidgets)
         mainLayout.addWidget(buttonbox)
         self.setLayout(mainLayout)
 
     def accept(self):
-        self.config["hours"] = [timeInMinutes(QtCore.QTime(0, 0))] + [timeInMinutes(x.time()) for x in
-                                                                      self.workingTimes]
-        self.config["lunchBreak"] = timeInMinutes(self.lunchTime.time())
-        self.saveConfig()
+        cfg = self.loadConfig()
+        cfg["hours"] = [timeToMinutes(QtCore.QTime(0, 0))] + [timeToMinutes(x.time()) for x in self.workingTimes]
+        cfg["lunchBreak"] = timeToMinutes(self.lunchTime.time())
+        cfg["connectHoursAndMinutes"] = self.hourWrapAround.isChecked()
+        cfg["forecastEndTimes"] = self.autoCalcEndTime.isChecked()
+        self.saveConfig(cfg)
         super().accept()
 
-    def saveConfig(self):
+    def saveConfig(self, cfg):
         file = f"settings.json"
         with open(file, "w") as fp:
-            json.dump(self.config, fp)
+            json.dump(cfg, fp)
 
     def loadConfig(self):
         file = f"settings.json"
@@ -239,8 +252,14 @@ class SettingsDialog(QtWidgets.QDialog):
             config = self.loadConfig()
             if not config:
                 self.exec_()
-        cfg = {"hours": [minutesInTime(x) for x in config["hours"]],
-               "lunchBreak": config["lunchBreak"]}
+        t1 = QtCore.QTime(6, 36)
+        t2 = QtCore.QTime(4, 24)
+        t3 = QtCore.QTime(0, 0)
+        cfg = {"hours": [minutesToTime(x) for x in config.get("hours", [t3, t1, t1, t1, t1, t2, t3, t3])],
+               "lunchBreak": config.get("lunchBreak", 30),
+               "connectHoursAndMinutes": config.get("connectHoursAndMinutes", False),
+               "forecastEndTimes": config.get("forecastEndTimes", True)}
+        AdvancedTimeEdit.connectHoursAndMinutes = config.get("connectHoursAndMinutes", False)
         return cfg
 
 
@@ -294,17 +313,13 @@ class MainWindow(QtWidgets.QMainWindow):
             self.plannedTimeLabels.append(label)
             mainWidgetLayout.addWidget(label, days, 1)
 
-            starttime = QtWidgets.QTimeEdit()
-            starttime.setDisplayFormat("hh:mm")
+            starttime = AdvancedTimeEdit()
             starttime.editingFinished.connect(self.updateDateLabels)
-            starttime.setWrapping(True)
             self.starttimeTime.append(starttime)
             mainWidgetLayout.addWidget(starttime, days, 2)
 
-            endtime = QtWidgets.QTimeEdit()
-            endtime.setDisplayFormat("hh:mm")
+            endtime = AdvancedTimeEdit()
             endtime.editingFinished.connect(self.updateDateLabels)
-            endtime.setWrapping(True)
             self.endtimeTime.append(endtime)
             mainWidgetLayout.addWidget(endtime, days, 4)
 
@@ -416,8 +431,8 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.dateButtons[x].setStyleSheet("color: black")
 
                 if self.dateButtons[x].timestamps[0] and self.dateButtons[x].timestamps[1]:
-                    self.starttimeTime[x].setTime(QtCore.QTime(minutesInTime(self.dateButtons[x].timestamps[0])))
-                    self.endtimeTime[x].setTime(QtCore.QTime(minutesInTime(self.dateButtons[x].timestamps[1])))
+                    self.starttimeTime[x].setTime(QtCore.QTime(minutesToTime(self.dateButtons[x].timestamps[0])))
+                    self.endtimeTime[x].setTime(QtCore.QTime(minutesToTime(self.dateButtons[x].timestamps[1])))
                     self.starttimeTime[x].setEnabled(False)
                     self.endtimeTime[x].setEnabled(False)
                 else:
@@ -434,8 +449,9 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.fullTimeLabels[x].show()
                     self.breakCheckBoxes[x].show()
 
-                    if not self.endtimeTime[x].time().msecsSinceStartOfDay() and self.starttimeTime[
-                        x].time().msecsSinceStartOfDay():
+                    if not self.endtimeTime[x].time().msecsSinceStartOfDay() and \
+                            self.starttimeTime[x].time().msecsSinceStartOfDay() and \
+                            self.config["forecastEndTimes"]:
                         # no end time set yet but start time is --> automatically set endtime
                         startTimeSeconds = QtCore.QTime(0, 0).secsTo(self.starttimeTime[x].time())
                         diffTime = self.endtimeTime[x].time().addSecs(startTimeSeconds + seconds[dayOfWeek])
@@ -513,8 +529,8 @@ class MainWindow(QtWidgets.QMainWindow):
         # gather all data and store it somewhere
         data = {"MonthAndYear": self.oldDateTime.toString("MMMM yyyy")}
         for x in range(self.oldDateTime.daysInMonth()):
-            s = timeInMinutes(self.starttimeTime[x].time())
-            e = timeInMinutes(self.endtimeTime[x].time())
+            s = timeToMinutes(self.starttimeTime[x].time())
+            e = timeToMinutes(self.endtimeTime[x].time())
             v = self.vacationCheckBoxes[x].isChecked()
             lb = self.breakCheckBoxes[x].isChecked()
             timestamps = self.dateButtons[x].timestamps
@@ -544,16 +560,16 @@ class MainWindow(QtWidgets.QMainWindow):
                         timestamps = [0, 0, [(0, 0)] * 10]
                     else:
                         s, e, v, lb, timestamps = _data
-                    self.starttimeTime[x].setTime(minutesInTime(s))
-                    self.endtimeTime[x].setTime(minutesInTime(e))
+                    self.starttimeTime[x].setTime(minutesToTime(s))
+                    self.endtimeTime[x].setTime(minutesToTime(e))
                     self.vacationCheckBoxes[x].setChecked(v)
                     self.breakCheckBoxes[x].setChecked(lb)
                     self.dateButtons[x].timestamps = timestamps
         else:
             date = self.datetime.date()
             for x in range(date.daysInMonth()):
-                self.starttimeTime[x].setTime(minutesInTime(0))
-                self.endtimeTime[x].setTime(minutesInTime(0))
+                self.starttimeTime[x].setTime(minutesToTime(0))
+                self.endtimeTime[x].setTime(minutesToTime(0))
                 self.vacationCheckBoxes[x].setChecked(False)
                 self.breakCheckBoxes[x].setChecked(True)
                 self.dateButtons[x].timestamps = [0, 0, [(0, 0)] * 10]
