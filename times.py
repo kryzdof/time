@@ -370,7 +370,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.config = self.settings.getConfig()
         self.scroll = scrollarea
         self.updateDateLabels()
-        self.resize(QtCore.QSize(mainWidget.sizeHint().width(), self.size().height()))
+        self.resize(QtCore.QSize(mainWidget.sizeHint().width(), self.size().height() + 50))
 
     def onSettingsClicked(self):
         if self.settings.exec_():
@@ -580,6 +580,7 @@ def start_GUI():
     """Starts the GUI
     """
     app = QtWidgets.QApplication(sys.argv)
+    app.setStyleSheet("QLabel { qproperty-alignment: AlignCenter; }")
     app.setApplicationName('Time Converter')
     window = MainWindow()
     window.show()
