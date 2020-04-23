@@ -237,7 +237,7 @@ class SettingsDialog(QtWidgets.QDialog):
 
     def loadConfig(self):
         file = f"settings.json"
-        config = None
+        config = dict()
         while True:
             try:
                 with open(file, "r") as fp:
@@ -247,14 +247,10 @@ class SettingsDialog(QtWidgets.QDialog):
                 return config
 
     def getConfig(self):
-        config = None
-        while config is None:
-            config = self.loadConfig()
-            if not config:
-                self.exec_()
-        t1 = QtCore.QTime(6, 36)
-        t2 = QtCore.QTime(4, 24)
-        t3 = QtCore.QTime(0, 0)
+        config = self.loadConfig()
+        t1 = 6 * 60 + 36
+        t2 = 4 * 60 + 24
+        t3 = 0
         cfg = {"hours": [minutesToTime(x) for x in config.get("hours", [t3, t1, t1, t1, t1, t2, t3, t3])],
                "lunchBreak": config.get("lunchBreak", 30),
                "connectHoursAndMinutes": config.get("connectHoursAndMinutes", False),
