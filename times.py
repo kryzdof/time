@@ -3,6 +3,7 @@ import json
 import os
 import shutil
 import calendar
+import time
 
 from itertools import zip_longest
 
@@ -181,6 +182,9 @@ class SettingsDialog(QtWidgets.QDialog):
 
         timeSettingsLayout = QtWidgets.QGridLayout()
         timeSettingsWidgets = QtWidgets.QGroupBox("Time Settings")
+        _timeSettingsWidgetsText = "Guess what! That are the daily working hours you think you should be working :)"
+        timeSettingsWidgets.setToolTip(_timeSettingsWidgetsText)
+        timeSettingsWidgets.setWhatsThis(_timeSettingsWidgetsText)
         for x, dayStr in enumerate([d for d in calendar.day_name]):
             label = QtWidgets.QLabel(dayStr)
             timeSettingsLayout.addWidget(label, x + 1, 0)
@@ -194,6 +198,10 @@ class SettingsDialog(QtWidgets.QDialog):
 
         lunchSettingsLayout = QtWidgets.QGridLayout()
         lunchSettingsWidgets = QtWidgets.QGroupBox("Lunch Settings")
+        _lunchSettingsWidgetsText = "This time will be reduced from your working hours if the lunch break checkbox " \
+                                    "is set"
+        lunchSettingsWidgets.setToolTip(_lunchSettingsWidgetsText)
+        lunchSettingsWidgets.setWhatsThis(_lunchSettingsWidgetsText)
         label = QtWidgets.QLabel("Normal Lunch Break")
         lunchSettingsLayout.addWidget(label, 0, 0)
         self.lunchTime = AdvancedTimeEdit(QtCore.QTime(0, 0).addSecs(self.config["lunchBreak"] * 60))
@@ -202,12 +210,28 @@ class SettingsDialog(QtWidgets.QDialog):
 
         generalSettingsLayout = QtWidgets.QGridLayout()
         generalSettingsWidgets = QtWidgets.QGroupBox("General Settings")
-        self.autoCalcEndTime = QtWidgets.QCheckBox("Automatically forecast end time")
-        self.autoCalcEndTime.setChecked(self.config["connectHoursAndMinutes"])
-        self.hourWrapAround = QtWidgets.QCheckBox("Change hours with minutes")
-        self.hourWrapAround.setChecked(self.config["forecastEndTimes"])
+        self.autoCalcEndTime = QtWidgets.QCheckBox("Forecast end time")
+        self.autoCalcEndTime.setChecked(self.config["forecastEndTimes"])
+        _autoCalcEndTimeText = "This will automatically calculate the end time of the day according " \
+                               "to the supposed working hours for this day"
+        self.autoCalcEndTime.setToolTip(_autoCalcEndTimeText)
+        self.autoCalcEndTime.setWhatsThis(_autoCalcEndTimeText)
+
+        self.hourWrapAround = QtWidgets.QCheckBox("Wrap hours")
+        self.hourWrapAround.setChecked(self.config["connectHoursAndMinutes"])
+        _hourWrapAroundText = "If minutes wrap around, the hour will also be changed"
+        self.hourWrapAround.setToolTip(_hourWrapAroundText)
+        self.hourWrapAround.setWhatsThis(_hourWrapAroundText)
+
+        self.minimize = QtWidgets.QCheckBox("Quit to Tray")
+        self.minimize.setChecked(self.config["minimize"])
+        _minimizeText = "Minimize to tray instead of closing"
+        self.minimize.setToolTip(_minimizeText)
+        self.minimize.setWhatsThis(_minimizeText)
+
         generalSettingsLayout.addWidget(self.autoCalcEndTime, 0, 0)
         generalSettingsLayout.addWidget(self.hourWrapAround, 1, 0)
+        generalSettingsLayout.addWidget(self.minimize, 2, 0)
 
         generalSettingsWidgets.setLayout(generalSettingsLayout)
 
@@ -227,6 +251,7 @@ class SettingsDialog(QtWidgets.QDialog):
         cfg["lunchBreak"] = timeToMinutes(self.lunchTime.time())
         cfg["connectHoursAndMinutes"] = self.hourWrapAround.isChecked()
         cfg["forecastEndTimes"] = self.autoCalcEndTime.isChecked()
+        cfg["minimize"] = self.minimize.isChecked()
         self.saveConfig(cfg)
         super().accept()
 
@@ -255,13 +280,14 @@ class SettingsDialog(QtWidgets.QDialog):
         cfg = {"hours": [minutesToTime(x) for x in config.get("hours", [t3, t1, t1, t1, t1, t2, t3, t3])],
                "lunchBreak": config.get("lunchBreak", 30),
                "connectHoursAndMinutes": config.get("connectHoursAndMinutes", False),
-               "forecastEndTimes": config.get("forecastEndTimes", True)}
+               "forecastEndTimes": config.get("forecastEndTimes", True),
+               "minimize": config.get("minimize", True)}
         AdvancedTimeEdit.connectHoursAndMinutes = config.get("connectHoursAndMinutes", False)
         return cfg
 
 
 class MainWindow(QtWidgets.QMainWindow):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, app=None):
         super(MainWindow, self).__init__(parent)
 
         self.setObjectName("UltraTime")
@@ -377,18 +403,154 @@ class MainWindow(QtWidgets.QMainWindow):
         splitter.handle(1).setCursor(QtCore.Qt.ArrowCursor)
 
         self.settings = SettingsDialog(self)
-
         self.setCentralWidget(splitter)
         self.loadMonth()
         self.config = self.settings.getConfig()
-        self.scroll = scrollarea
+        self.workPackages = self.loadWorkPackages()
+
+        self.app = app
+        if self.app:
+            self.app.setQuitOnLastWindowClosed(not self.config["minimize"])
+            self.menu = None
+            self.actions = None
+            self.trayIcon = None
+            self.wpActions = None
+            self.createTray()
+
+        self.scroll = scrollArea
         self.updateDateLabels()
         self.resize(QtCore.QSize(mainWidget.sizeHint().width(), self.size().height() + 50))
+
+        self.timer = QtCore.QTimer()
+        self.timer.timeout.connect(self.cyclicFunction)
+        self.timer.start(1000)
+
+    def cyclicFunction(self):
+        for wp in self.workPackages:
+            if wp.isActive:
+                self.wpActions[wp.name].setText(str(wp))
+
+    def stopAllTracking(self, checked=None):
+        if checked:
+            for wp in self.workPackages:
+                if wp.isActive:
+                    self.wpActions[wp.name].setChecked(False)
+                    wp.stopTracking()
+
+    def createTray(self):
+        self.trayIcon = QtWidgets.QSystemTrayIcon(QtGui.QIcon(resource_path("time.png")), self.app)
+        self.trayIcon.show()
+        self.trayIcon.activated.connect(self.trayActivated)
+        self.createTrayMenu()
+
+    def createTrayMenu(self):
+        self.menu = QtWidgets.QMenu()
+        self.actions = dict()
+        self.wpActions = dict()
+
+        action_newWP = QtWidgets.QAction("New Work Package")
+        action_newWP.triggered.connect(self.newWorkPackage)
+        self.menu.addAction(action_newWP)
+        self.actions["New Work Package"] = action_newWP
+
+        self.menu.addSeparator()
+
+        if self.workPackages:
+            for wp in self.workPackages:
+                action_WP = QtWidgets.QAction(str(wp), checkable=True)
+                action_WP.triggered.connect(self.stopAllTracking)
+                action_WP.triggered.connect(wp.triggered)
+                if wp.isActive:
+                    action_WP.setChecked(True)
+                self.menu.addAction(action_WP)
+                self.wpActions[wp.name] = action_WP
+            self.menu.addSeparator()
+
+        action_startDay = QtWidgets.QAction("Start Day")
+        action_startDay.triggered.connect(self.startDay)
+        self.menu.addAction(action_startDay)
+        self.actions["Start Day"] = action_startDay
+
+        action_endDay = QtWidgets.QAction("End Day")
+        action_endDay.triggered.connect(self.endDay)
+        self.menu.addAction(action_endDay)
+        self.actions["End Day"] = action_endDay
+
+        self.menu.addSeparator()
+
+        action_open = QtWidgets.QAction("Open")
+        action_open.triggered.connect(self.restore)
+        self.menu.addAction(action_open)
+        self.actions["Open"] = action_open
+
+        action_exit = QtWidgets.QAction("Exit")
+        action_exit.triggered.connect(self.app.exit)
+        self.menu.addAction(action_exit)
+        self.actions["Exit"] = action_exit
+
+        self.trayIcon.setContextMenu(self.menu)
+
+    def trayActivated(self, reason):
+        if reason == self.trayIcon.Trigger:
+            self.restore()
+        if reason == self.trayIcon.MiddleClick:
+            self.app.exit()
+
+    def restore(self):
+        self.show()  # if closed to tray
+        self.activateWindow()  # if in the background
+        self.setWindowState(self.windowState() & ~QtCore.Qt.WindowMinimized | QtCore.Qt.WindowActive)  # if minimized
+
+    def startDay(self):
+        x = QtCore.QDate.currentDate().day() - 1
+        h = QtCore.QTime.currentTime().hour()
+        m = QtCore.QTime.currentTime().minute()
+        self.starttimeTime[x].setTime(QtCore.QTime(h, m))
+        self.updateDateLabels()
+
+    def endDay(self):
+        x = QtCore.QDate.currentDate().day() - 1
+        h = QtCore.QTime.currentTime().hour()
+        m = QtCore.QTime.currentTime().minute()
+        self.endtimeTime[x].setTime(QtCore.QTime(h, m))
+        self.updateDateLabels()
+
+    @staticmethod
+    def loadWorkPackages():
+        file = f"workpackages.json"
+        workPackages = []
+        try:
+            with open(file, "r") as fp:
+                jsonWP = json.load(fp)
+                for wp in jsonWP:
+                    workPackages.append(WorkPackage(wp["name"], wp["ticket"], wp["loggedTime"]))
+            return workPackages
+        except Exception as e:
+            return workPackages
+
+    def saveWorkPackages(self):
+        file = f"workpackages.json"
+        if self.workPackages:
+            workPackages = []
+            for wp in self.workPackages:
+                workPackages.append(wp.asJson())
+            with open(file, "w") as fp:
+                json.dump(workPackages, fp)
+
+    def newWorkPackage(self):
+        name, ok = QtWidgets.QInputDialog.getText(self, "Name of new Work Package", "Name")
+        if ok:
+            wp = WorkPackage(name)
+            self.stopAllTracking(True)
+            wp.startTracking()
+            self.workPackages.append(wp)
+            self.createTrayMenu()
 
     def onSettingsClicked(self):
         if self.settings.exec_():
             self.config = self.settings.getConfig()
             self.updateDateLabels()
+            self.app.setQuitOnLastWindowClosed(not self.config["minimize"])
 
     def openDetailTimesDialog(self):
         pushButton = self.sender()
@@ -425,6 +587,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.dateButtons[x].setStyleSheet("color: rgb(100, 100, 100)")
                 elif x + 1 == today.day() and month == today.month():
                     self.dateButtons[x].setStyleSheet("color: red")
+                    self.actions["Start Day"].setDisabled(self.starttimeTime[x].time().msecsSinceStartOfDay())
                 else:
                     self.dateButtons[x].setStyleSheet("color: black")
 
@@ -590,15 +753,74 @@ class MainWindow(QtWidgets.QMainWindow):
         super(MainWindow, self).closeEvent(event)
 
 
+class WorkPackage:
+    def __init__(self, name, ticket=None, loggedtime=0):
+        self.name = name
+        self.ticket = ticket
+        self.loggedTime = loggedtime
+        self.isActive = False
+        self.currentStartTimeStamp = None
+
+    def __str__(self):
+        return f"{self.name} - {self.ftime()}"
+
+    def changeName(self, name):
+        self.name = name
+
+    def startTracking(self):
+        self.currentStartTimeStamp = time.time()
+        self.isActive = True
+
+    def stopTracking(self):
+        self.loggedTime += time.time() - self.currentStartTimeStamp
+        self.isActive = False
+        self.currentStartTimeStamp = None
+
+    def triggered(self):
+        if self.isActive:
+            self.stopTracking()
+        else:
+            self.startTracking()
+
+    def resetTime(self):
+        if self.isActive:
+            self.currentStartTimeStamp = time.time()
+        self.loggedTime = 0
+
+    def getCurrentTime(self):
+        if self.currentStartTimeStamp:
+            return time.time() - self.currentStartTimeStamp
+        return 0
+
+    def getTotalTime(self):
+        return self.getCurrentTime() + self.loggedTime
+
+    def ftime(self):
+        t = self.getTotalTime()
+        return f"{int(t//3600):01d}:{int(t/60%60):02d}:{int(t%60):02d}"
+
+    def asJson(self):
+        return {
+            "name": self.name,
+            "ticket": self.ticket,
+            "loggedTime": self.getTotalTime(),
+        }
+
+
 def start_GUI():
     """Starts the GUI
     """
     app = QtWidgets.QApplication(sys.argv)
     app.setStyleSheet("QLabel { qproperty-alignment: AlignCenter; }")
     app.setApplicationName('Time Converter')
-    window = MainWindow()
+    app.setWindowIcon(QtGui.QPixmap(resource_path("time.png")))
+    app.setQuitOnLastWindowClosed(False)
+    window = MainWindow(app=app)
+    window.setWindowIcon(QtGui.QPixmap(resource_path("time.png")))
     window.show()
+
     app.exec_()
+    window.saveWorkPackages()
 
 
 def main():
