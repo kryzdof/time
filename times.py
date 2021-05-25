@@ -33,8 +33,8 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 
-def timeToMinutes(time):
-    return time.hour() * 60 + time.minute()
+def timeToMinutes(qTime):
+    return qTime.hour() * 60 + qTime.minute()
 
 
 def minutesToTime(minutes):
@@ -230,21 +230,22 @@ class SettingsDialog(QtWidgets.QDialog):
         self.saveConfig(cfg)
         super().accept()
 
-    def saveConfig(self, cfg):
+    @staticmethod
+    def saveConfig(cfg):
         file = f"settings.json"
         with open(file, "w") as fp:
             json.dump(cfg, fp)
 
-    def loadConfig(self):
+    @staticmethod
+    def loadConfig():
         file = f"settings.json"
         config = dict()
-        while True:
-            try:
-                with open(file, "r") as fp:
-                    config = json.load(fp)
-                return config
-            except:
-                return config
+        try:
+            with open(file, "r") as fp:
+                config = json.load(fp)
+            return config
+        except:
+            return config
 
     def getConfig(self):
         config = self.loadConfig()
@@ -287,6 +288,7 @@ class MainWindow(QtWidgets.QMainWindow):
         topLineLayout.addWidget(settingsButton, 0, 9)
 
         topLine.setLayout(topLineLayout)
+        topLine.setFixedHeight(40)
 
         mainWidget = QtWidgets.QGroupBox()
         mainWidgetLayout = QtWidgets.QGridLayout()
@@ -349,13 +351,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
         mainWidget.setLayout(mainWidgetLayout)
 
-        scrollarea = QtWidgets.QScrollArea()
-        scrollarea.setWidget(mainWidget)
-        scrollarea.setWidgetResizable(True)
-        scrollarea.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        scrollarea.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
-        scrollarea.setSizeAdjustPolicy(scrollarea.AdjustToContents)
-        scrollarea.ensureWidgetVisible(self.dateButtons[self.datetime.date().day() - 1], 200, 200)
+        scrollArea = QtWidgets.QScrollArea()
+        scrollArea.setWidget(mainWidget)
+        scrollArea.setWidgetResizable(True)
+        scrollArea.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scrollArea.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
+        scrollArea.setSizeAdjustPolicy(scrollArea.AdjustToContents)
+        scrollArea.ensureWidgetVisible(self.dateButtons[self.datetime.date().day() - 1], 200, 200)
 
         for x in range(30):
             mainWidget.setTabOrder(self.autoTimes[x], self.autoTimes[x + 1])
@@ -370,7 +372,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         splitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
         splitter.addWidget(topLine)
-        splitter.addWidget(scrollarea)
+        splitter.addWidget(scrollArea)
         splitter.setChildrenCollapsible(False)
         splitter.handle(1).setCursor(QtCore.Qt.ArrowCursor)
 
@@ -415,7 +417,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.plannedTimeLabels[x].show()
                 self.vacationCheckBoxes[x].show()
                 dayOfWeek = QtCore.QDate(year, month, x + 1).dayOfWeek()
-                self.dateButtons[x].setText(f"{dayString[dayOfWeek]} {x+1}.{month}.{year}")
+                self.dateButtons[x].setText(f"{dayString[dayOfWeek]} {x + 1}.{month}.{year}")
                 # self.dataButtons[x].set
                 self.plannedTimeLabels[x].setText(hours[dayOfWeek])
 
@@ -510,10 +512,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.breakCheckBoxes[x].hide()
         if ZA < 0:
             ZA = abs(ZA)
-            self.hoursZA.setText(f"ZA: -{ZA//3600}:{ZA%3600//60:002}")
+            self.hoursZA.setText(f"ZA: -{ZA // 3600}:{ZA % 3600 // 60:002}")
         elif ZA >= 0:
-            self.hoursZA.setText(f"ZA: {ZA//3600}:{ZA%3600//60:002}")
-        self.hoursTotal.setText(f'{tH//3600}:{tH%3600//60:002}/{pTH//3600}:{pTH%3600//60:002}')
+            self.hoursZA.setText(f"ZA: {ZA // 3600}:{ZA % 3600 // 60:002}")
+        self.hoursTotal.setText(f'{tH // 3600}:{tH % 3600 // 60:002}/{pTH // 3600}:{pTH % 3600 // 60:002}')
 
     def onMonthChanged(self):
         self.saveMonth()
