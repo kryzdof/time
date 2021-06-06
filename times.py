@@ -42,9 +42,11 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 
-def getJiraInstance(uid):
+def getJiraInstance(uid, password=None):
+    if password is None:
+        password = keyring.get_password("jiraconnection", uid)
     try:
-        jira = JIRA(WorkPackageWidget.urlStart, basic_auth=(uid, keyring.get_password("jiraconnection", uid)),
+        jira = JIRA(WorkPackageWidget.urlStart, basic_auth=(uid, password),
                     options={"agile_rest_path": "agile"}, max_retries=0, timeout=5)
     except JIRAError as e:
         print(e)
@@ -343,7 +345,7 @@ class SettingsDialog(QtWidgets.QDialog):
         if self.uidLE.text() and self.passwordLE.text():
             if cfg["uid"] != self.uidLE.text() or password != self.passwordLE.text():
                 try:
-                    getJiraInstance(cfg["uid"])
+                    getJiraInstance(self.uidLE.text(), self.passwordLE.text())
                 except Exception as e:
                     ret = QtWidgets.QMessageBox.warning(self, "Jira Connection Error", str(e),
                                                         QtWidgets.QMessageBox.Abort | QtWidgets.QMessageBox.Ignore)
