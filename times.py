@@ -4,19 +4,29 @@ import os
 import shutil
 import calendar
 import time
+import keyring
+from keyring.backends.Windows import WinVaultKeyring
 
 from itertools import zip_longest
 
-try:
-    from PySide2 import QtCore, QtWidgets, QtGui
-except ImportError:
-    print("PySide2 not found - installing now")
-    import subprocess
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "PySide2==5.11.2",
-                           "--index-url", r"https://eu.artifactory.conti.de/api/pypi/i_bs_ultra_tools_pypi_l/simple",
-                           "--extra-index-url", "https://pypi.python.org/simple", "--no-cache-dir"])
-    from PySide2 import QtCore, QtWidgets, QtGui
+from jira import JIRA, JIRAError
+from requests.exceptions import ConnectTimeout
 
+from PySide2 import QtCore, QtWidgets, QtGui
+
+
+# done: when creating a new workpackage check unique names
+# done: align width of WorkPackageWidget's children to fit together
+# done: downsize if a workpackage is deleted
+# done: use icons instead of text
+# done: ask before deleting a workpackage!
+# done: make work packages editable
+# done: add settings for Jira connection (URL, uid, pw)
+# done: how to save pw securely? --> keyring
+# done: implement Jira hour logging
+# todo: add create button to WorkPackageView?
+
+keyring.set_keyring(WinVaultKeyring())
 
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
@@ -24,14 +34,52 @@ def resource_path(relative_path):
         # PyInstaller creates a temp folder and stores path in _MEIPASS,
         # and places our data files in a folder relative to that temp
         # folder named as specified in the datas tuple in the spec file
-        print(sys._MEIPASS)
-        print(sys)
         base_path = os.path.join(sys._MEIPASS, 'pics')
     except Exception:
         # sys._MEIPASS is not defined, so use the original path
         base_path = os.path.join(os.path.curdir, "pics")
 
     return os.path.join(base_path, relative_path)
+
+
+def getJiraInstance(uid):
+    try:
+        jira = JIRA(WorkPackageWidget.urlStart, basic_auth=(uid, keyring.get_password("jiraconnection", uid)),
+                    options={"agile_rest_path": "agile"}, max_retries=0, timeout=5)
+    except JIRAError as e:
+        print(e)
+        if e.status_code == 401:
+            raise ConnectionError("Username or Password is wrong")
+        raise
+    except ConnectTimeout:
+        raise ConnectionError(f"Could not connect to {WorkPackageWidget.urlStart}")
+    return jira
+
+
+def JiraWriteLog(uid, ticket, duration):
+    try:
+        jira = getJiraInstance(uid)
+    except Exception as e:
+        ret = QtWidgets.QMessageBox.critical(None, "Jira Connection Error", str(e),
+                                             QtWidgets.QMessageBox.Ok)
+        return False
+    try:
+        jira.add_worklog(ticket, timeSpentSeconds=duration)
+    except JIRAError as e:
+        if e.status_code == 404:
+            ret = QtWidgets.QMessageBox.critical(None, "Work Log Creation Error",
+                                                 f"Issue {ticket} not found",
+                                                 QtWidgets.QMessageBox.Ok)
+        else:
+            ret = QtWidgets.QMessageBox.critical(None, "Work Log Creation Error",
+                                                 f"Error: '{e.text}'\nStatus Code: {e.status_code}",
+                                                 QtWidgets.QMessageBox.Ok)
+        return False
+    except Exception as e:
+        ret = QtWidgets.QMessageBox.critical(None, "Work Log Creation Error", str(e),
+                                             QtWidgets.QMessageBox.Ok)
+        return False
+    return True
 
 
 def timeToMinutes(qTime):
@@ -61,6 +109,21 @@ class AdvancedTimeEdit(QtWidgets.QTimeEdit):
                     self.setTime(self.time().addSecs(3600))
         else:
             super().stepBy(steps)
+
+
+class AdvancedSpinBox(QtWidgets.QSpinBox):
+    wrapped = QtCore.Signal(int)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWrapping(True)
+
+    def stepBy(self, step):
+        if self.value() == self.minimum() and step < 0:
+            self.wrapped.emit(-1)
+        if self.value() == self.maximum() and step > 0:
+            self.wrapped.emit(1)
+        super().stepBy(step)
 
 
 class DetailTimesDialog(QtWidgets.QDialog):
@@ -178,7 +241,7 @@ class SettingsDialog(QtWidgets.QDialog):
 
         self.config = self.getConfig()
         self.setWindowTitle("Settings")
-        mainLayout = QtWidgets.QVBoxLayout()
+        mainLayout = QtWidgets.QGridLayout()
 
         timeSettingsLayout = QtWidgets.QGridLayout()
         timeSettingsWidgets = QtWidgets.QGroupBox("Time Settings")
@@ -235,13 +298,33 @@ class SettingsDialog(QtWidgets.QDialog):
 
         generalSettingsWidgets.setLayout(generalSettingsLayout)
 
+        workPackageSettingsLayout = QtWidgets.QGridLayout()
+        workPackageSettingsWidgets = QtWidgets.QGroupBox("Jira Settings")
+
+        self.jiraUrlLabel = QtWidgets.QLabel("Jira URL")
+        self.jiraUrlLE = QtWidgets.QLineEdit(self.config["url"])
+        self.uidLabel = QtWidgets.QLabel("User ID")
+        self.uidLE = QtWidgets.QLineEdit(self.config["uid"])
+        self.passwordLabel = QtWidgets.QLabel("Password")
+        self.passwordLE = QtWidgets.QLineEdit(keyring.get_password("jiraconnection", self.config["uid"]))
+        self.passwordLE.setEchoMode(QtWidgets.QLineEdit.Password)
+        workPackageSettingsLayout.addWidget(self.jiraUrlLabel, 0, 0)
+        workPackageSettingsLayout.addWidget(self.jiraUrlLE, 0, 1)
+        workPackageSettingsLayout.addWidget(self.uidLabel, 1, 0)
+        workPackageSettingsLayout.addWidget(self.uidLE, 1, 1)
+        workPackageSettingsLayout.addWidget(self.passwordLabel, 2, 0)
+        workPackageSettingsLayout.addWidget(self.passwordLE, 2, 1)
+
+        workPackageSettingsWidgets.setLayout(workPackageSettingsLayout)
+
         buttonbox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
         buttonbox.accepted.connect(self.accept)
         buttonbox.rejected.connect(self.reject)
 
-        mainLayout.addWidget(timeSettingsWidgets)
-        mainLayout.addWidget(lunchSettingsWidgets)
-        mainLayout.addWidget(generalSettingsWidgets)
+        mainLayout.addWidget(timeSettingsWidgets, 0, 0, 2, 1)
+        mainLayout.addWidget(lunchSettingsWidgets, 0, 1)
+        mainLayout.addWidget(generalSettingsWidgets, 1, 1)
+        mainLayout.addWidget(workPackageSettingsWidgets, 2, 0, 1, 2)
         mainLayout.addWidget(buttonbox)
         self.setLayout(mainLayout)
 
@@ -252,6 +335,19 @@ class SettingsDialog(QtWidgets.QDialog):
         cfg["connectHoursAndMinutes"] = self.hourWrapAround.isChecked()
         cfg["forecastEndTimes"] = self.autoCalcEndTime.isChecked()
         cfg["minimize"] = self.minimize.isChecked()
+        cfg["url"] = self.jiraUrlLE.text().rstrip("/")
+        if cfg["uid"] != self.uidLE.text() or keyring.get_password("jiraconnection", cfg["uid"]) != self.passwordLE.text():
+            try:
+                getJiraInstance(cfg["uid"])
+            except Exception as e:
+                ret = QtWidgets.QMessageBox.warning(self, "Jira Connection Error", str(e),
+                                                    QtWidgets.QMessageBox.Abort | QtWidgets.QMessageBox.Ignore)
+                if ret == QtWidgets.QMessageBox.Abort:
+                    return
+        if cfg["uid"] != self.uidLE.text():
+            keyring.delete_password("jiraconnection", cfg["uid"])
+        cfg["uid"] = self.uidLE.text()
+        keyring.set_password("jiraconnection", cfg["uid"], self.passwordLE.text())
         self.saveConfig(cfg)
         super().accept()
 
@@ -281,8 +377,11 @@ class SettingsDialog(QtWidgets.QDialog):
                "lunchBreak": config.get("lunchBreak", 30),
                "connectHoursAndMinutes": config.get("connectHoursAndMinutes", False),
                "forecastEndTimes": config.get("forecastEndTimes", True),
-               "minimize": config.get("minimize", True)}
-        AdvancedTimeEdit.connectHoursAndMinutes = config.get("connectHoursAndMinutes", False)
+               "minimize": config.get("minimize", True),
+               "url": config.get("url", WorkPackageWidget.urlStart),
+               "uid": config.get("uid", None)}
+        AdvancedTimeEdit.connectHoursAndMinutes = cfg["connectHoursAndMinutes"]
+        WorkPackageWidget.urlStart = cfg["url"]
         return cfg
 
 
@@ -312,6 +411,10 @@ class MainWindow(QtWidgets.QMainWindow):
         topLineLayout.addWidget(self.hoursTotal, 0, 8)
 
         topLineLayout.addWidget(settingsButton, 0, 9)
+
+        workpackagesButton = QtWidgets.QPushButton("WP")
+        workpackagesButton.clicked.connect(self.openWorkPackageView)
+        topLineLayout.addWidget(workpackagesButton, 0, 10)
 
         topLine.setLayout(topLineLayout)
         topLine.setFixedHeight(40)
@@ -407,6 +510,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.loadMonth()
         self.config = self.settings.getConfig()
         self.workPackages = self.loadWorkPackages()
+        self.workPackageView = WorkPackageView(self)
 
         self.app = app
         if self.app:
@@ -414,28 +518,32 @@ class MainWindow(QtWidgets.QMainWindow):
             self.menu = None
             self.actions = None
             self.trayIcon = None
-            self.wpActions = None
             self.createTray()
 
         self.scroll = scrollArea
         self.updateDateLabels()
         self.resize(QtCore.QSize(mainWidget.sizeHint().width(), self.size().height() + 50))
 
+        self.cyclicCounter = 0
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.cyclicFunction)
         self.timer.start(1000)
 
     def cyclicFunction(self):
+        self.cyclicCounter = self.cyclicCounter % 60 + 1
+        self.colorDates()
+        self.workPackageView.updateChildrenData()
         for wp in self.workPackages:
-            if wp.isActive:
-                self.wpActions[wp.name].setText(str(wp))
+            if wp.isChecked():
+                wp.setText(str(wp))
+                if self.cyclicCounter // 60:
+                    self.saveWorkPackages()
 
     def stopAllTracking(self, checked=None):
         if checked:
             for wp in self.workPackages:
-                if wp.isActive:
-                    self.wpActions[wp.name].setChecked(False)
-                    wp.stopTracking()
+                if wp.isChecked() and wp != self.sender():
+                    wp.trigger()
 
     def createTray(self):
         self.trayIcon = QtWidgets.QSystemTrayIcon(QtGui.QIcon(resource_path("time.png")), self.app)
@@ -446,7 +554,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def createTrayMenu(self):
         self.menu = QtWidgets.QMenu()
         self.actions = dict()
-        self.wpActions = dict()
 
         action_newWP = QtWidgets.QAction("New Work Package")
         action_newWP.triggered.connect(self.newWorkPackage)
@@ -457,13 +564,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if self.workPackages:
             for wp in self.workPackages:
-                action_WP = QtWidgets.QAction(str(wp), checkable=True)
-                action_WP.triggered.connect(self.stopAllTracking)
-                action_WP.triggered.connect(wp.triggered)
-                if wp.isActive:
-                    action_WP.setChecked(True)
-                self.menu.addAction(action_WP)
-                self.wpActions[wp.name] = action_WP
+                self.menu.addAction(wp)
             self.menu.addSeparator()
 
         action_startDay = QtWidgets.QAction("Start Day")
@@ -502,30 +603,36 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setWindowState(self.windowState() & ~QtCore.Qt.WindowMinimized | QtCore.Qt.WindowActive)  # if minimized
 
     def startDay(self):
+        self.datetime.setDate(QtCore.QDate.currentDate())
         x = QtCore.QDate.currentDate().day() - 1
         h = QtCore.QTime.currentTime().hour()
         m = QtCore.QTime.currentTime().minute()
         self.starttimeTime[x].setTime(QtCore.QTime(h, m))
         self.updateDateLabels()
+        self.saveMonth()
 
     def endDay(self):
+        self.datetime.setDate(QtCore.QDate.currentDate())
         x = QtCore.QDate.currentDate().day() - 1
         h = QtCore.QTime.currentTime().hour()
         m = QtCore.QTime.currentTime().minute()
         self.endtimeTime[x].setTime(QtCore.QTime(h, m))
         self.updateDateLabels()
+        self.saveMonth()
 
-    @staticmethod
-    def loadWorkPackages():
+    def loadWorkPackages(self):
         file = f"workpackages.json"
         workPackages = []
         try:
             with open(file, "r") as fp:
                 jsonWP = json.load(fp)
-                for wp in jsonWP:
-                    workPackages.append(WorkPackage(wp["name"], wp["ticket"], wp["loggedTime"]))
+                for wpJson in jsonWP:
+                    wp = WorkPackage(wpJson["name"], wpJson["ticket"], wpJson["loggedTime"])
+                    wp.triggered.connect(self.stopAllTracking)
+                    workPackages.append(wp)
             return workPackages
         except Exception as e:
+            print(e)
             return workPackages
 
     def saveWorkPackages(self):
@@ -538,13 +645,23 @@ class MainWindow(QtWidgets.QMainWindow):
                 json.dump(workPackages, fp)
 
     def newWorkPackage(self):
-        name, ok = QtWidgets.QInputDialog.getText(self, "Name of new Work Package", "Name")
+        name, ok = QtWidgets.QInputDialog.getText(self, "Name of new Work Package", "Please put in the name")
+        while name in [wp.name for wp in self.workPackages] and ok:
+            name, ok = QtWidgets.QInputDialog.getText(self, "Name of new Work Package", "The name has to be unique")
         if ok:
             wp = WorkPackage(name)
-            self.stopAllTracking(True)
-            wp.startTracking()
+            wp.triggered.connect(self.stopAllTracking)
+            wp.trigger()
             self.workPackages.append(wp)
             self.createTrayMenu()
+            self.workPackageView.addWorkPackage(wp)
+
+    def removeWorkPackage(self, wp):
+        self.workPackages.remove(wp)
+        self.createTrayMenu()
+
+    def openWorkPackageView(self):
+        self.workPackageView.show()
 
     def onSettingsClicked(self):
         if self.settings.exec_():
@@ -558,6 +675,26 @@ class MainWindow(QtWidgets.QMainWindow):
         if dlg.exec_():
             pushButton.timestamps = dlg.getDetails()
             self.updateDateLabels()
+
+    def colorDates(self, day=None):
+        date = self.datetime.date()
+        month = date.month()
+        today = QtCore.QDate.currentDate()
+
+        if day is None:
+            start = 0
+            end = date.daysInMonth()
+        else:
+            start = day
+            end = day + 1
+        for x in range(start, end):
+            if x + 1 < today.day() and month == today.month():
+                self.dateButtons[x].setStyleSheet("color: rgb(100, 100, 100)")
+            elif x + 1 == today.day() and month == today.month():
+                self.dateButtons[x].setStyleSheet("color: red")
+                self.actions["Start Day"].setDisabled(self.starttimeTime[x].time().msecsSinceStartOfDay())
+            else:
+                self.dateButtons[x].setStyleSheet("color: black")
 
     def updateDateLabels(self):
         dayString = [""] + [d for d in calendar.day_abbr]
@@ -583,13 +720,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 # self.dataButtons[x].set
                 self.plannedTimeLabels[x].setText(hours[dayOfWeek])
 
-                if x + 1 < today.day() and month == today.month():
-                    self.dateButtons[x].setStyleSheet("color: rgb(100, 100, 100)")
-                elif x + 1 == today.day() and month == today.month():
-                    self.dateButtons[x].setStyleSheet("color: red")
-                    self.actions["Start Day"].setDisabled(self.starttimeTime[x].time().msecsSinceStartOfDay())
-                else:
-                    self.dateButtons[x].setStyleSheet("color: black")
+                self.colorDates(x)
 
                 if self.dateButtons[x].timestamps[0] and self.dateButtons[x].timestamps[1]:
                     self.starttimeTime[x].setTime(QtCore.QTime(minutesToTime(self.dateButtons[x].timestamps[0])))
@@ -753,37 +884,36 @@ class MainWindow(QtWidgets.QMainWindow):
         super(MainWindow, self).closeEvent(event)
 
 
-class WorkPackage:
+class WorkPackage(QtWidgets.QAction):
     def __init__(self, name, ticket=None, loggedtime=0):
         self.name = name
         self.ticket = ticket
         self.loggedTime = loggedtime
-        self.isActive = False
         self.currentStartTimeStamp = None
+        super().__init__(text=name)
+        self.setCheckable(True)
+        self.setChecked(False)
+        self.triggered.connect(self._triggered)
+        self.setText(str(self))
 
     def __str__(self):
         return f"{self.name} - {self.ftime()}"
 
-    def changeName(self, name):
-        self.name = name
-
     def startTracking(self):
         self.currentStartTimeStamp = time.time()
-        self.isActive = True
 
     def stopTracking(self):
         self.loggedTime += time.time() - self.currentStartTimeStamp
-        self.isActive = False
         self.currentStartTimeStamp = None
 
-    def triggered(self):
-        if self.isActive:
+    def _triggered(self):
+        if not self.isChecked():
             self.stopTracking()
         else:
             self.startTracking()
 
     def resetTime(self):
-        if self.isActive:
+        if self.isChecked():
             self.currentStartTimeStamp = time.time()
         self.loggedTime = 0
 
@@ -797,14 +927,263 @@ class WorkPackage:
 
     def ftime(self):
         t = self.getTotalTime()
-        return f"{int(t//3600):01d}:{int(t/60%60):02d}:{int(t%60):02d}"
+        return f"{int(t // 3600):01d}:{int(t / 60 % 60):02d}:{int(t % 60):02d}"
+
+    def convertCurrentToLogged(self):
+        self.loggedTime += time.time() - self.currentStartTimeStamp
+        self.currentStartTimeStamp = time.time()
 
     def asJson(self):
+        if self.isChecked():
+            self.convertCurrentToLogged()
         return {
             "name": self.name,
             "ticket": self.ticket,
             "loggedTime": self.getTotalTime(),
         }
+
+
+class WorkPackageWidget(QtWidgets.QWidget):
+    started = QtCore.Signal(bool)
+    urlStart = "https://jira-ibs.zone2.agileci.conti.de"
+
+    def __init__(self, parent=None, workpackage=None):
+        super(WorkPackageWidget, self).__init__(parent)
+        self._workpackage = None
+
+        grid = QtWidgets.QGridLayout()
+        self.ticket = QtWidgets.QPushButton()
+        self.name = QtWidgets.QLabel()
+        self.time = QtWidgets.QLabel()
+        self.startStopButton = QtWidgets.QPushButton(QtGui.QPixmap(resource_path("play.png")), "")
+        self.startStopButton.setCheckable(True)
+        self.logButton = QtWidgets.QPushButton(QtGui.QPixmap(resource_path("jira.png")), "Log to Jira")
+        self.editButton = QtWidgets.QPushButton(QtGui.QPixmap(resource_path("edit.png")), "")
+        self.removeButton = QtWidgets.QPushButton(QtGui.QPixmap(resource_path("delete.png")), "")
+
+        self.ticket.clicked.connect(self.openUrl)
+        self.logButton.clicked.connect(self.logToJira)
+        self.editButton.clicked.connect(self.editWP)
+        self.removeButton.clicked.connect(self.removeWP)
+
+        grid.addWidget(self.ticket, 0, 0)
+        grid.addWidget(self.name, 0, 1)
+        grid.addWidget(self.time, 0, 2)
+        grid.addWidget(self.startStopButton, 0, 3)
+        grid.addWidget(self.logButton, 0, 4)
+        grid.addWidget(self.editButton, 0, 5)
+        grid.addWidget(self.removeButton, 0, 6)
+        self.setLayout(grid)
+
+        if workpackage:
+            self.setWorkPackage(workpackage)
+
+    def isActive(self):
+        return self._workpackage.isChecked()
+
+    def setWorkPackage(self, workpackage: WorkPackage):
+        self._workpackage = workpackage
+        self.startStopButton.clicked.connect(self._workpackage.trigger)
+        self.updateData()
+
+    def updateData(self):
+        if self._workpackage.ticket:
+            self.ticket.setText(self._workpackage.ticket)
+        else:
+            self.ticket.setText("Add Ticket #")
+        self.name.setText(self._workpackage.name)
+        self.time.setText(self._workpackage.ftime())
+        if self.isActive():
+            self.startStopButton.setChecked(True)
+            self.startStopButton.setIcon(QtGui.QPixmap(resource_path("pause.png")))
+            self.setStyleSheet("background: LightGreen")
+            self.setAutoFillBackground(True)
+        else:
+            self.startStopButton.setChecked(False)
+            self.startStopButton.setIcon(QtGui.QPixmap(resource_path("play.png")))
+            self.setStyleSheet("")
+
+    def openUrl(self):
+        if self._workpackage.ticket:
+            url = f"{self.urlStart}/browse/{self._workpackage.ticket}"
+            QtGui.QDesktopServices.openUrl(QtCore.QUrl(url))
+        else:
+            name, ok = QtWidgets.QInputDialog.getText(self, "Ticket-ID (e.g. GMCTC-1234)", "Ticket")
+            if ok:
+                self._workpackage.ticket = name
+                self.ticket.setText(name)
+
+    def startStopClicked(self, checked=False):
+        self.started.emit(checked)
+
+    def editWP(self):
+        WorkPackageEditDialog(self, self._workpackage).exec_()
+
+    def removeWP(self):
+        ret = QtWidgets.QMessageBox.warning(
+            self, "Delete workpackage",
+            "The workpackage will be deleted together with all the logged time. Are you sure you want to delete it?",
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+        if ret == QtWidgets.QMessageBox.Yes:
+            if isinstance(self.parent(), WorkPackageView):
+                self.parent().removeWorkPackage(self)
+                self.parent().parent().removeWorkPackage(self._workpackage)
+            self.deleteLater()
+
+    def getMainWindow(self, parent):
+        if parent:
+            if isinstance(parent, MainWindow):
+                return parent
+            else:
+                return self.getMainWindow(parent.parent())
+        else:
+            return None
+
+    def logToJira(self):
+        mainWindow = self.getMainWindow(self.parent())
+        wp = self._workpackage
+        loggedTime = int(wp.getTotalTime())
+        if wp.ticket and loggedTime:
+            if JiraWriteLog(mainWindow.config["uid"], wp.ticket, loggedTime):
+                print("log written - deleting logged time")
+                wp.resetTime()
+
+
+class WorkPackageView(QtWidgets.QDialog):
+    def __init__(self, parent):
+        super().__init__(parent,
+                         QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowTitleHint | QtCore.Qt.WindowSystemMenuHint)
+        self.setWindowTitle("Work Packages")
+        wps = self.parent().workPackages
+        self.splitter = QtWidgets.QVBoxLayout()
+        for wp in wps:
+            print(wp)
+            self.splitter.addWidget((WorkPackageWidget(self, wp)))
+        self.splitter.setSizeConstraint(QtWidgets.QLayout.SetFixedSize)
+        self.setLayout(self.splitter)
+
+    def addWorkPackage(self, wp):
+        self.splitter.addWidget((WorkPackageWidget(self, wp)))
+        self.updateChildrenData()
+
+    def removeWorkPackage(self, wpw):
+        for child in self.findChildren(WorkPackageWidget):
+            if child == wpw:
+                self.children().remove(child)
+                break
+        else:
+            print("nothing found")
+        self.updateChildrenData()
+
+    def updateChildrenData(self):
+        children = self.findChildren(WorkPackageWidget)
+        if children:
+            ticketMax = max([wp.ticket.minimumSizeHint().width() for wp in children])
+            nameMax = max([wp.name.minimumSizeHint().width() for wp in children])
+            timeMax = max([wp.time.minimumSizeHint().width() for wp in children])
+
+            for child in self.findChildren(WorkPackageWidget):
+                child.updateData()
+                child.ticket.setMinimumWidth(ticketMax)
+                child.name.setMinimumWidth(nameMax)
+                child.time.setMinimumWidth(timeMax)
+
+
+class WorkPackageEditDialog(QtWidgets.QDialog):
+    def __init__(self, parent, workpackage):
+        super().__init__(parent,
+                         QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowTitleHint | QtCore.Qt.WindowSystemMenuHint)
+        self.setWindowTitle("Edit Work Package")
+        self.workpackage = workpackage
+
+        grid = QtWidgets.QGridLayout()
+        self.notUnique = QtWidgets.QLabel("Name has to be unique!")
+        self.notUnique.setStyleSheet("color: red")
+        self.notUnique.setVisible(False)
+        self.ticket = QtWidgets.QLabel("Ticket")
+        self.name = QtWidgets.QLabel("Name")
+        self.time = QtWidgets.QLabel("Time")
+        self.ticket.setAlignment(QtCore.Qt.AlignLeft)
+        self.name.setAlignment(QtCore.Qt.AlignLeft)
+        self.time.setAlignment(QtCore.Qt.AlignLeft)
+        grid.addWidget(self.notUnique, 0, 0, 1, 4)
+        grid.addWidget(self.ticket, 1, 0)
+        grid.addWidget(self.name, 2, 0)
+        grid.addWidget(self.time, 3, 0, 2, 1)
+        self.ticketLE = QtWidgets.QLineEdit(self.workpackage.ticket)
+        self.nameLE = QtWidgets.QLineEdit(self.workpackage.name)
+
+        self.dayLabel = QtWidgets.QLabel("Days")
+        self.hourLabel = QtWidgets.QLabel("Hours")
+        self.minuteLabel = QtWidgets.QLabel("Minutes")
+        self.dayEdit = QtWidgets.QSpinBox()
+        self.hourEdit = AdvancedSpinBox()
+        self.hourEdit.setRange(0, 23)
+        self.hourEdit.wrapped.connect(self.dayEdit.stepBy)
+        self.minuteEdit = AdvancedSpinBox()
+        self.minuteEdit.setRange(0, 59)
+        self.minuteEdit.wrapped.connect(self.hourEdit.stepBy)
+        grid.addWidget(self.ticketLE, 1, 1, 1, 3)
+        grid.addWidget(self.nameLE, 2, 1, 1, 3)
+        grid.addWidget(self.dayLabel, 3, 1)
+        grid.addWidget(self.hourLabel, 3, 2)
+        grid.addWidget(self.minuteLabel, 3, 3)
+        grid.addWidget(self.dayEdit, 4, 1)
+        grid.addWidget(self.hourEdit, 4, 2)
+        grid.addWidget(self.minuteEdit, 4, 3)
+
+        self.updateTime(True)
+
+        buttonbox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
+        buttonbox.accepted.connect(self.accept)
+        buttonbox.rejected.connect(self.reject)
+
+        grid.addWidget(buttonbox, 5, 0, 1, 4)
+        self.setLayout(grid)
+
+        self.timer = QtCore.QTimer()
+        self.timer.timeout.connect(self.updateTime)
+        self.timer.start(1000)
+
+    def updateTime(self, frominit=False):
+        isChecked = self.workpackage.isChecked()
+        if isChecked or frominit:
+            t = self.workpackage.getTotalTime()
+            days = t // (60 * 60 * 24)
+            t = t - (days * 60 * 60 * 24)
+            hours = t // (60 * 60)
+            t = t - (hours * 60 * 60)
+            minutes = t // 60
+            self.dayEdit.setValue(days)
+            self.hourEdit.setValue(hours)
+            self.minuteEdit.setValue(minutes)
+
+        self.dayEdit.setDisabled(isChecked)
+        self.hourEdit.setDisabled(isChecked)
+        self.minuteEdit.setDisabled(isChecked)
+
+    def getMainWindow(self, parent):
+        if parent:
+            if isinstance(parent, MainWindow):
+                return parent
+            else:
+                return self.getMainWindow(parent.parent())
+        else:
+            return None
+
+    def accept(self):
+        mainWindow = self.getMainWindow(self.parent())
+        if self.workpackage.name != self.nameLE.text() and self.nameLE.text() in [wp.name for wp in
+                                                                                  mainWindow.workPackages]:
+            self.notUnique.setVisible(True)
+            return
+        self.workpackage.name = self.nameLE.text()
+        self.workpackage.ticket = self.ticketLE.text()
+        if not self.workpackage.isChecked():
+            self.workpackage.loggedTime = (self.dayEdit.value() * 60 * 60 * 24) + \
+                                          (self.hourEdit.value() * 60 * 60) + \
+                                          (self.minuteEdit.value() * 60)
+        super().accept()
 
 
 def start_GUI():
