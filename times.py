@@ -329,23 +329,29 @@ class SettingsDialog(QtWidgets.QDialog):
         self.setLayout(mainLayout)
 
     def accept(self):
-        cfg = self.loadConfig()
+        cfg = self.getConfig()
         cfg["hours"] = [timeToMinutes(QtCore.QTime(0, 0))] + [timeToMinutes(x.time()) for x in self.workingTimes]
         cfg["lunchBreak"] = timeToMinutes(self.lunchTime.time())
         cfg["connectHoursAndMinutes"] = self.hourWrapAround.isChecked()
         cfg["forecastEndTimes"] = self.autoCalcEndTime.isChecked()
         cfg["minimize"] = self.minimize.isChecked()
         cfg["url"] = self.jiraUrlLE.text().rstrip("/")
-        if cfg["uid"] != self.uidLE.text() or keyring.get_password("jiraconnection", cfg["uid"]) != self.passwordLE.text():
-            try:
-                getJiraInstance(cfg["uid"])
-            except Exception as e:
-                ret = QtWidgets.QMessageBox.warning(self, "Jira Connection Error", str(e),
-                                                    QtWidgets.QMessageBox.Abort | QtWidgets.QMessageBox.Ignore)
-                if ret == QtWidgets.QMessageBox.Abort:
-                    return
+        if keyring.get_password("jiraconnection", cfg["uid"]):
+            password = keyring.get_password("jiraconnection", cfg["uid"])
+        else:
+            password = ""
+        if self.uidLE.text() and self.passwordLE.text():
+            if cfg["uid"] != self.uidLE.text() or password != self.passwordLE.text():
+                try:
+                    getJiraInstance(cfg["uid"])
+                except Exception as e:
+                    ret = QtWidgets.QMessageBox.warning(self, "Jira Connection Error", str(e),
+                                                        QtWidgets.QMessageBox.Abort | QtWidgets.QMessageBox.Ignore)
+                    if ret == QtWidgets.QMessageBox.Abort:
+                        return
         if cfg["uid"] != self.uidLE.text():
-            keyring.delete_password("jiraconnection", cfg["uid"])
+            if keyring.get_password("jiraconnection", cfg["uid"]):
+                keyring.delete_password("jiraconnection", cfg["uid"])
         cfg["uid"] = self.uidLE.text()
         keyring.set_password("jiraconnection", cfg["uid"], self.passwordLE.text())
         self.saveConfig(cfg)
@@ -370,8 +376,8 @@ class SettingsDialog(QtWidgets.QDialog):
 
     def getConfig(self):
         config = self.loadConfig()
-        t1 = 6 * 60 + 36
-        t2 = 4 * 60 + 24
+        t1 = 8 * 60 + 15
+        t2 = 5 * 60 + 30
         t3 = 0
         cfg = {"hours": [minutesToTime(x) for x in config.get("hours", [t3, t1, t1, t1, t1, t2, t3, t3])],
                "lunchBreak": config.get("lunchBreak", 30),
@@ -379,7 +385,7 @@ class SettingsDialog(QtWidgets.QDialog):
                "forecastEndTimes": config.get("forecastEndTimes", True),
                "minimize": config.get("minimize", True),
                "url": config.get("url", WorkPackageWidget.urlStart),
-               "uid": config.get("uid", None)}
+               "uid": config.get("uid", "")}
         AdvancedTimeEdit.connectHoursAndMinutes = cfg["connectHoursAndMinutes"]
         WorkPackageWidget.urlStart = cfg["url"]
         return cfg
