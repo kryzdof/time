@@ -24,7 +24,7 @@ from PySide2 import QtCore, QtWidgets, QtGui
 # done: add settings for Jira connection (URL, uid, pw)
 # done: how to save pw securely? --> keyring
 # done: implement Jira hour logging
-# todo: add create button to WorkPackageView?
+# done: add create button to WorkPackageView?
 
 keyring.set_keyring(WinVaultKeyring())
 
@@ -1047,10 +1047,13 @@ class WorkPackageWidget(QtWidgets.QWidget):
         else:
             return None
 
+    def getTotalTime(self):
+        return self._workpackage.getTotalTime()
+
     def logToJira(self):
         mainWindow = self.getMainWindow(self.parent())
         wp = self._workpackage
-        loggedTime = int(wp.getTotalTime())
+        loggedTime = int(self.getTotalTime())
         if wp.ticket and loggedTime:
             if JiraWriteLog(mainWindow.config["uid"], wp.ticket, loggedTime):
                 print("log written - deleting logged time")
@@ -1067,8 +1070,20 @@ class WorkPackageView(QtWidgets.QDialog):
         for wp in wps:
             print(wp)
             self.splitter.addWidget((WorkPackageWidget(self, wp)))
-        self.splitter.setSizeConstraint(QtWidgets.QLayout.SetFixedSize)
-        self.setLayout(self.splitter)
+        # self.splitter.setSizeConstraint(QtWidgets.QLayout.SetFixedSize)
+        mainSplitter = QtWidgets.QVBoxLayout()
+        mainSplitter.addLayout(self.splitter)
+        hSplitter = QtWidgets.QHBoxLayout()
+
+        self.totalTimeLabel = QtWidgets.QLabel("")
+        self.newWorkPackageButton = QtWidgets.QPushButton("New Work Package")
+        self.newWorkPackageButton.clicked.connect(self.parent().newWorkPackage)
+
+        hSplitter.addWidget(self.totalTimeLabel)
+        hSplitter.addWidget(self.newWorkPackageButton)
+        mainSplitter.addLayout(hSplitter)
+
+        self.setLayout(mainSplitter)
 
     def addWorkPackage(self, wp):
         self.splitter.addWidget((WorkPackageWidget(self, wp)))
@@ -1090,11 +1105,15 @@ class WorkPackageView(QtWidgets.QDialog):
             nameMax = max([wp.name.minimumSizeHint().width() for wp in children])
             timeMax = max([wp.time.minimumSizeHint().width() for wp in children])
 
-            for child in self.findChildren(WorkPackageWidget):
+            for child in children:
                 child.updateData()
                 child.ticket.setMinimumWidth(ticketMax)
                 child.name.setMinimumWidth(nameMax)
                 child.time.setMinimumWidth(timeMax)
+
+            t = sum([wp.getTotalTime() for wp in children])
+            totalTime = f"{int(t // 3600):01d}:{int(t / 60 % 60):02d}:{int(t % 60):02d}"
+            self.totalTimeLabel.setText(f"Current Total Time: {totalTime}")
 
 
 class WorkPackageEditDialog(QtWidgets.QDialog):
