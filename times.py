@@ -733,7 +733,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.diffTimeLabels[x].show()
                     self.fullTimeLabels[x].show()
                     self.breakCheckBoxes[x].show()
-                    
+
                     self.addLunchBreak(x, seconds[dayOfWeek])
 
                     # calc diff time
@@ -777,7 +777,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.fullTimeLabels[x].hide()
                 self.breakCheckBoxes[x].hide()
 
-        self.setZAHours()
+        self.setZAHours(ZA)
         self.hoursTotal.setText(f'{tH // 3600}:{tH % 3600 // 60:002}/{pTH // 3600}:{pTH % 3600 // 60:002}')
 
     def detailInputs(self, index: int):
@@ -789,7 +789,7 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             self.starttimeTime[index].setEnabled(True)
             self.endtimeTime[index].setEnabled(True)
-            
+
     def addLunchBreak(self, index: int, daySeconds: int):
         if not self.endtimeTime[index].time().msecsSinceStartOfDay() and \
                 self.starttimeTime[index].time().msecsSinceStartOfDay() and \
@@ -800,7 +800,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if self.breakCheckBoxes[index].isChecked():
                 diffTime = diffTime.addSecs(self.config["lunchBreak"] * 60)
             self.endtimeTime[index].setTime(diffTime)
-            
+
     def workedDayHours(self, index: int):
         if self.starttimeTime[index].time().msecsSinceStartOfDay():
             diff = self.starttimeTime[index].time().secsTo(self.endtimeTime[index].time())
@@ -817,14 +817,14 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             self.fullTimeLabels[index].setText("")
             return 0
-        
+
     def setZAHours(self, za: int):
         if za < 0:
             za = abs(za)
             self.hoursZA.setText(f"za: -{za // 3600}:{za % 3600 // 60:002}")
         elif za >= 0:
             self.hoursZA.setText(f"za: {za // 3600}:{za % 3600 // 60:002}")
-        
+
     def onMonthChanged(self):
         self.saveMonth()
         self.oldDateTime = self.datetime.date()
