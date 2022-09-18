@@ -565,6 +565,7 @@ class MainWindow(QtWidgets.QMainWindow):
             for wp in self.workPackages:
                 self.menu.addAction(wp)
             self.menu.addSeparator()
+            print("TESTtest")
 
         action_startDay = QtWidgets.QAction("Start Day")
         action_startDay.triggered.connect(self.startDay)
@@ -721,14 +722,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 self.colorDates(x)
 
-                if self.dateButtons[x].timestamps[0] and self.dateButtons[x].timestamps[1]:
-                    self.starttimeTime[x].setTime(QtCore.QTime(minutesToTime(self.dateButtons[x].timestamps[0])))
-                    self.endtimeTime[x].setTime(QtCore.QTime(minutesToTime(self.dateButtons[x].timestamps[1])))
-                    self.starttimeTime[x].setEnabled(False)
-                    self.endtimeTime[x].setEnabled(False)
-                else:
-                    self.starttimeTime[x].setEnabled(True)
-                    self.endtimeTime[x].setEnabled(True)
+                self.detailInputs(x)
 
                 calcNeeded = seconds[dayOfWeek] and not self.vacationCheckBoxes[x].isChecked()
                 if calcNeeded:
@@ -739,16 +733,8 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.diffTimeLabels[x].show()
                     self.fullTimeLabels[x].show()
                     self.breakCheckBoxes[x].show()
-
-                    if not self.endtimeTime[x].time().msecsSinceStartOfDay() and \
-                            self.starttimeTime[x].time().msecsSinceStartOfDay() and \
-                            self.config["forecastEndTimes"]:
-                        # no end time set yet but start time is --> automatically set endtime
-                        startTimeSeconds = QtCore.QTime(0, 0).secsTo(self.starttimeTime[x].time())
-                        diffTime = self.endtimeTime[x].time().addSecs(startTimeSeconds + seconds[dayOfWeek])
-                        if self.breakCheckBoxes[x].isChecked():
-                            diffTime = diffTime.addSecs(self.config["lunchBreak"] * 60)
-                        self.endtimeTime[x].setTime(diffTime)
+                    
+                    self.addLunchBreak(x, seconds[dayOfWeek])
 
                     # calc diff time
                     newStart = self.starttimeTime[x].time().addSecs(seconds[dayOfWeek])
@@ -771,20 +757,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     pTH += seconds[dayOfWeek]
 
                     # worked hours per day:
-                    if self.starttimeTime[x].time().msecsSinceStartOfDay():
-                        diff = self.starttimeTime[x].time().secsTo(self.endtimeTime[x].time())
-                        if self.breakCheckBoxes[x].isChecked():
-                            diff -= self.config["lunchBreak"] * 60
-                        diffTime = QtCore.QTime(0, 0).addSecs(diff)
-                        self.fullTimeLabels[x].setText(diffTime.toString('hh:mm'))
-                        tH += diff
-                        # mark the time red if it is more than 10.5 hours
-                        if diff > 36000:
-                            self.fullTimeLabels[x].setStyleSheet("color: red")
-                        else:
-                            self.fullTimeLabels[x].setStyleSheet("color: black")
-                    else:
-                        self.fullTimeLabels[x].setText("")
+                    tH += self.workedDayHours(x)
                 else:
                     self.starttimeTime[x].hide()
                     self.endtimeTime[x].hide()
@@ -803,13 +776,55 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.vacationCheckBoxes[x].hide()
                 self.fullTimeLabels[x].hide()
                 self.breakCheckBoxes[x].hide()
-        if ZA < 0:
-            ZA = abs(ZA)
-            self.hoursZA.setText(f"ZA: -{ZA // 3600}:{ZA % 3600 // 60:002}")
-        elif ZA >= 0:
-            self.hoursZA.setText(f"ZA: {ZA // 3600}:{ZA % 3600 // 60:002}")
+
+        self.setZAHours()
         self.hoursTotal.setText(f'{tH // 3600}:{tH % 3600 // 60:002}/{pTH // 3600}:{pTH % 3600 // 60:002}')
 
+    def detailInputs(self, index: int):
+        if self.dateButtons[index].timestamps[0] and self.dateButtons[index].timestamps[1]:
+            self.starttimeTime[index].setTime(QtCore.QTime(minutesToTime(self.dateButtons[index].timestamps[0])))
+            self.endtimeTime[index].setTime(QtCore.QTime(minutesToTime(self.dateButtons[index].timestamps[1])))
+            self.starttimeTime[index].setEnabled(False)
+            self.endtimeTime[index].setEnabled(False)
+        else:
+            self.starttimeTime[index].setEnabled(True)
+            self.endtimeTime[index].setEnabled(True)
+            
+    def addLunchBreak(self, index: int, daySeconds: int):
+        if not self.endtimeTime[index].time().msecsSinceStartOfDay() and \
+                self.starttimeTime[index].time().msecsSinceStartOfDay() and \
+                self.config["forecastEndTimes"]:
+            # no end time set yet but start time is --> automatically set endtime
+            startTimeSeconds = QtCore.QTime(0, 0).secsTo(self.starttimeTime[index].time())
+            diffTime = self.endtimeTime[index].time().addSecs(startTimeSeconds + daySeconds)
+            if self.breakCheckBoxes[index].isChecked():
+                diffTime = diffTime.addSecs(self.config["lunchBreak"] * 60)
+            self.endtimeTime[index].setTime(diffTime)
+            
+    def workedDayHours(self, index: int):
+        if self.starttimeTime[index].time().msecsSinceStartOfDay():
+            diff = self.starttimeTime[index].time().secsTo(self.endtimeTime[index].time())
+            if self.breakCheckBoxes[index].isChecked():
+                diff -= self.config["lunchBreak"] * 60
+            diffTime = QtCore.QTime(0, 0).addSecs(diff)
+            self.fullTimeLabels[index].setText(diffTime.toString('hh:mm'))
+            # mark the time red if it is more than 10.5 hours
+            if diff > 36000:
+                self.fullTimeLabels[index].setStyleSheet("color: red")
+            else:
+                self.fullTimeLabels[index].setStyleSheet("color: black")
+            return diff
+        else:
+            self.fullTimeLabels[index].setText("")
+            return 0
+        
+    def setZAHours(self, za: int):
+        if za < 0:
+            za = abs(za)
+            self.hoursZA.setText(f"za: -{za // 3600}:{za % 3600 // 60:002}")
+        elif za >= 0:
+            self.hoursZA.setText(f"za: {za // 3600}:{za % 3600 // 60:002}")
+        
     def onMonthChanged(self):
         self.saveMonth()
         self.oldDateTime = self.datetime.date()
