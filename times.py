@@ -15,18 +15,8 @@ from requests.exceptions import ConnectTimeout
 from PySide2 import QtCore, QtWidgets, QtGui
 
 
-# done: when creating a new workpackage check unique names
-# done: align width of WorkPackageWidget's children to fit together
-# done: downsize if a workpackage is deleted
-# done: use icons instead of text
-# done: ask before deleting a workpackage!
-# done: make work packages editable
-# done: add settings for Jira connection (URL, uid, pw)
-# done: how to save pw securely? --> keyring
-# done: implement Jira hour logging
-# done: add create button to WorkPackageView?
-
 keyring.set_keyring(WinVaultKeyring())
+
 
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
@@ -62,23 +52,23 @@ def JiraWriteLog(uid, ticket, duration):
     try:
         jira = getJiraInstance(uid)
     except Exception as e:
-        ret = QtWidgets.QMessageBox.critical(None, "Jira Connection Error", str(e),
+        QtWidgets.QMessageBox.critical(None, "Jira Connection Error", str(e),
                                              QtWidgets.QMessageBox.Ok)
         return False
     try:
         jira.add_worklog(ticket, timeSpentSeconds=duration)
     except JIRAError as e:
         if e.status_code == 404:
-            ret = QtWidgets.QMessageBox.critical(None, "Work Log Creation Error",
+            QtWidgets.QMessageBox.critical(None, "Work Log Creation Error",
                                                  f"Issue {ticket} not found",
                                                  QtWidgets.QMessageBox.Ok)
         else:
-            ret = QtWidgets.QMessageBox.critical(None, "Work Log Creation Error",
+            QtWidgets.QMessageBox.critical(None, "Work Log Creation Error",
                                                  f"Error: '{e.text}'\nStatus Code: {e.status_code}",
                                                  QtWidgets.QMessageBox.Ok)
         return False
     except Exception as e:
-        ret = QtWidgets.QMessageBox.critical(None, "Work Log Creation Error", str(e),
+        QtWidgets.QMessageBox.critical(None, "Work Log Creation Error", str(e),
                                              QtWidgets.QMessageBox.Ok)
         return False
     return True
@@ -361,19 +351,20 @@ class SettingsDialog(QtWidgets.QDialog):
 
     @staticmethod
     def saveConfig(cfg):
-        file = f"settings.json"
+        file = "settings.json"
         with open(file, "w") as fp:
             json.dump(cfg, fp)
 
     @staticmethod
     def loadConfig():
-        file = f"settings.json"
+        file = "settings.json"
         config = dict()
         try:
             with open(file, "r") as fp:
                 config = json.load(fp)
             return config
-        except:
+        except Exception as e:
+            print(f"Using default config - Couldn't load from file: {e}")
             return config
 
     def getConfig(self):
@@ -629,7 +620,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.saveMonth()
 
     def loadWorkPackages(self):
-        file = f"workpackages.json"
+        file = "workpackages.json"
         workPackages = []
         try:
             with open(file, "r") as fp:
@@ -644,7 +635,7 @@ class MainWindow(QtWidgets.QMainWindow):
             return workPackages
 
     def saveWorkPackages(self):
-        file = f"workpackages.json"
+        file = "workpackages.json"
         if self.workPackages:
             workPackages = []
             for wp in self.workPackages:
@@ -837,12 +828,12 @@ class MainWindow(QtWidgets.QMainWindow):
             data[f"{x}"] = [s, e, v, lb, timestamps]
         if not os.path.exists("data"):
             os.mkdir("data")
-        with open(f"data\{data['MonthAndYear']}.json", "w") as fp:
+        with open(rf"data\{data['MonthAndYear']}.json", "w") as fp:
             json.dump(data, fp)
 
     def loadMonth(self):
         # load all data if possible
-        file = f"data\{self.oldDateTime.toString('MMMM yyyy')}.json"
+        file = rf"data\{self.oldDateTime.toString('MMMM yyyy')}.json"
         if os.path.exists(file):
             shutil.copy(file, file.replace(".json", ".json.bak"))
             with open(file, "r") as fp:
@@ -1068,7 +1059,7 @@ class WorkPackageView(QtWidgets.QDialog):
         wps = self.parent().workPackages
         self.splitter = QtWidgets.QVBoxLayout()
         for wp in wps:
-            print(wp)
+            print(f"workpackage {wp}")
             self.splitter.addWidget((WorkPackageWidget(self, wp)))
         # self.splitter.setSizeConstraint(QtWidgets.QLayout.SetFixedSize)
         mainSplitter = QtWidgets.QVBoxLayout()
