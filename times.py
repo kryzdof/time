@@ -56,6 +56,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.vacationCheckBoxes = []
         self.fullTimeLabels = []
         self.breakCheckBoxes = []
+        self.HOCheckBoxes = []
         for days in range(31):
             dateButton = QtWidgets.QPushButton(str(days))
             dateButton.clicked.connect(self.openDetailTimesDialog)
@@ -99,11 +100,25 @@ class MainWindow(QtWidgets.QMainWindow):
             self.fullTimeLabels.append(label)
             mainWidgetLayout.addWidget(label, days, 8)
 
-            breakCheckBox = QtWidgets.QCheckBox("Lunch Break")
-            self.breakCheckBoxes.append(breakCheckBox)
+            breakCheckBox = QtWidgets.QPushButton()
             breakCheckBox.clicked.connect(self.updateDateLabels)
+            breakCheckBox.setCheckable(True)
+            # breakCheckBox.setStyleSheet("QPushButton:checked {background-color: LightGreen;}")
+            breakCheckBox.setIcon(QtGui.QPixmap(resource_path("lunch.png")))
+            breakCheckBox.setToolTip("Green if you had lunch - will reduce the worked time on this day by the configured normal lunch break")
+            self.breakCheckBoxes.append(breakCheckBox)
             mainWidgetLayout.addWidget(breakCheckBox, days, 9)
 
+            HOCheckBox = QtWidgets.QPushButton()
+            HOCheckBox.setCheckable(True)
+            HOCheckBox.setChecked(True)
+            # HOCheckBox.setStyleSheet("QPushButton:checked {background-color: LightGreen;}")
+            HOCheckBox.setIcon(QtGui.QPixmap(resource_path("house.png")))
+            HOCheckBox.setToolTip("Green if you worked from home - helps you remember that")
+            self.HOCheckBoxes.append(HOCheckBox)
+            mainWidgetLayout.addWidget(HOCheckBox, days, 10)
+
+        self.setStyleSheet("QPushButton:checked {background-color: LightGreen;}")
         mainWidget.setLayout(mainWidgetLayout)
 
         scrollArea = QtWidgets.QScrollArea()
@@ -360,6 +375,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.diffTimeLabels[x].show()
                     self.fullTimeLabels[x].show()
                     self.breakCheckBoxes[x].show()
+                    self.HOCheckBoxes[x].show()
 
                     self.addLunchBreak(x, seconds[dayOfWeek])
 
@@ -393,6 +409,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.diffTimeLabels[x].hide()
                     self.fullTimeLabels[x].hide()
                     self.breakCheckBoxes[x].hide()
+                    self.HOCheckBoxes[x].hide()
             else:
                 self.dateButtons[x].hide()
                 self.plannedTimeLabels[x].hide()
@@ -403,6 +420,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.vacationCheckBoxes[x].hide()
                 self.fullTimeLabels[x].hide()
                 self.breakCheckBoxes[x].hide()
+                self.HOCheckBoxes[x].hide()
 
         self.setZAHours(ZA)
         self.hoursTotal.setText(f'{tH // 3600}:{tH % 3600 // 60:002}/{pTH // 3600}:{pTH % 3600 // 60:002}')
@@ -466,8 +484,9 @@ class MainWindow(QtWidgets.QMainWindow):
             e = timeToMinutes(self.endtimeTime[x].time())
             v = self.vacationCheckBoxes[x].isChecked()
             lb = self.breakCheckBoxes[x].isChecked()
+            ho = self.HOCheckBoxes[x].isChecked()
             timestamps = self.dateButtons[x].timestamps
-            data[f"{x}"] = [s, e, v, lb, timestamps]
+            data[f"{x}"] = [s, e, v, lb, ho, timestamps]
         if not os.path.exists("data"):
             os.mkdir("data")
         with open(rf"data\{data['MonthAndYear']}.json", "w") as fp:
@@ -487,16 +506,22 @@ class MainWindow(QtWidgets.QMainWindow):
                     if len(_data) == 3:
                         s, e, v = _data
                         lb = True
+                        ho = True
                         timestamps = [0, 0, [(0, 0)] * 10]
                     elif len(_data) == 4:
                         s, e, v, lb = _data
+                        ho = True
                         timestamps = [0, 0, [(0, 0)] * 10]
-                    else:
+                    elif len(_data) == 5:
                         s, e, v, lb, timestamps = _data
+                        ho = True
+                    else:
+                        s, e, v, lb, ho, timestamps = _data
                     self.starttimeTime[x].setTime(minutesToTime(s))
                     self.endtimeTime[x].setTime(minutesToTime(e))
                     self.vacationCheckBoxes[x].setChecked(v)
                     self.breakCheckBoxes[x].setChecked(lb)
+                    self.HOCheckBoxes[x].setChecked(ho)
                     self.dateButtons[x].timestamps = timestamps
         else:
             date = self.datetime.date()
