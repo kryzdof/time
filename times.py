@@ -105,7 +105,8 @@ class MainWindow(QtWidgets.QMainWindow):
             breakCheckBox.setCheckable(True)
             # breakCheckBox.setStyleSheet("QPushButton:checked {background-color: LightGreen;}")
             breakCheckBox.setIcon(QtGui.QPixmap(resource_path("lunch.png")))
-            breakCheckBox.setToolTip("Green if you had lunch - will reduce the worked time on this day by the configured normal lunch break")
+            breakCheckBox.setToolTip(
+                "Green if you had lunch - will reduce the worked time on this day by the configured normal lunch break")
             self.breakCheckBoxes.append(breakCheckBox)
             mainWidgetLayout.addWidget(breakCheckBox, days, 9)
 
