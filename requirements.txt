@@ -1,5 +1,5 @@
 altgraph==0.17.3
-certifi==2022.9.14
+certifi==2022.9.24
 charset-normalizer==2.1.1
 defusedxml==0.7.1
 flake8==5.0.4
