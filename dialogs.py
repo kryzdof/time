@@ -71,13 +71,17 @@ class DetailTimesDialog(QtWidgets.QDialog):
         label.setAlignment(QtCore.Qt.AlignHCenter)
         mainLayout.addWidget(label, 0, 4)
 
-        for x, timestamps in zip_longest(range(10), self.timeStampData, fillvalue=(0, 0)):
+        for x, timestamps in zip_longest(
+            range(10), self.timeStampData, fillvalue=(0, 0)
+        ):
             t = QtCore.QTime(minutesToTime(timestamps[0]))
             startTimes = AdvancedTimeEdit(t)
             startTimes.editingFinished.connect(self.updateDiffs)
             self.startTimes.append(startTimes)
             mainLayout.addWidget(startTimes, x + 1, 1)
-            autoTime = QtWidgets.QPushButton(QtGui.QPixmap(resource_path("time.png")), "")
+            autoTime = QtWidgets.QPushButton(
+                QtGui.QPixmap(resource_path("time.png")), ""
+            )
             autoTime.QTimeReference = startTimes
             autoTime.clicked.connect(self.updateAutoTime)
             mainLayout.addWidget(autoTime, x + 1, 0)
@@ -87,7 +91,9 @@ class DetailTimesDialog(QtWidgets.QDialog):
             endTimes.editingFinished.connect(self.updateDiffs)
             self.endTimes.append(endTimes)
             mainLayout.addWidget(endTimes, x + 1, 2)
-            autoTime = QtWidgets.QPushButton(QtGui.QPixmap(resource_path("time.png")), "")
+            autoTime = QtWidgets.QPushButton(
+                QtGui.QPixmap(resource_path("time.png")), ""
+            )
             autoTime.QTimeReference = endTimes
             autoTime.clicked.connect(self.updateAutoTime)
             mainLayout.addWidget(autoTime, x + 1, 3)
@@ -102,12 +108,16 @@ class DetailTimesDialog(QtWidgets.QDialog):
         self.totalTime = QtWidgets.QLabel("")
         mainLayout.addWidget(self.totalTime, 11, 2)
 
-        buttonbox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok |
-                                               QtWidgets.QDialogButtonBox.Cancel |
-                                               QtWidgets.QDialogButtonBox.Reset)
+        buttonbox = QtWidgets.QDialogButtonBox(
+            QtWidgets.QDialogButtonBox.Ok
+            | QtWidgets.QDialogButtonBox.Cancel
+            | QtWidgets.QDialogButtonBox.Reset
+        )
         buttonbox.accepted.connect(self.accept)
         buttonbox.rejected.connect(self.reject)
-        buttonbox.button(QtWidgets.QDialogButtonBox.Reset).clicked.connect(self.resetTimes)
+        buttonbox.button(QtWidgets.QDialogButtonBox.Reset).clicked.connect(
+            self.resetTimes
+        )
 
         mainLayout.addWidget(buttonbox, 20, 0, 1, 5)
         self.setLayout(mainLayout)
@@ -126,13 +136,17 @@ class DetailTimesDialog(QtWidgets.QDialog):
                 self.timeDuration[x].hide()
             else:
                 diffTime = QtCore.QTime(0, 0).addSecs(diff)
-                self.timeDuration[x].setText(diffTime.toString('h:mm'))
+                self.timeDuration[x].setText(diffTime.toString("h:mm"))
                 self.timeDuration[x].show()
 
-        self.totalTime.setText(QtCore.QTime(0, 0).addSecs(self.totalDiff).toString('h:mm'))
+        self.totalTime.setText(
+            QtCore.QTime(0, 0).addSecs(self.totalDiff).toString("h:mm")
+        )
 
     def resetTimes(self):
-        for x, timestamps in zip_longest(range(10), self.timeStampData, fillvalue=(0, 0)):
+        for x, timestamps in zip_longest(
+            range(10), self.timeStampData, fillvalue=(0, 0)
+        ):
             t = QtCore.QTime(minutesToTime(timestamps[0]))
             self.startTimes[x].setTime(t)
             t = QtCore.QTime(minutesToTime(timestamps[1]))
@@ -151,7 +165,12 @@ class DetailTimesDialog(QtWidgets.QDialog):
             totalEnd = QtCore.QTime(0, 0)
         timeStamps = []
         for x in range(10):
-            timeStamps.append((timeToMinutes(self.startTimes[x].time()), timeToMinutes(self.endTimes[x].time())))
+            timeStamps.append(
+                (
+                    timeToMinutes(self.startTimes[x].time()),
+                    timeToMinutes(self.endTimes[x].time()),
+                )
+            )
         return timeToMinutes(totalStart), timeToMinutes(totalEnd), timeStamps
 
 
@@ -181,13 +200,17 @@ class SettingsDialog(QtWidgets.QDialog):
 
         lunchSettingsLayout = QtWidgets.QGridLayout()
         lunchSettingsWidgets = QtWidgets.QGroupBox("Lunch Settings")
-        _lunchSettingsWidgetsText = "This time will be reduced from your working hours if the lunch break checkbox " \
-                                    "is set"
+        _lunchSettingsWidgetsText = (
+            "This time will be reduced from your working hours if the lunch break checkbox "
+            "is set"
+        )
         lunchSettingsWidgets.setToolTip(_lunchSettingsWidgetsText)
         lunchSettingsWidgets.setWhatsThis(_lunchSettingsWidgetsText)
         label = QtWidgets.QLabel("Normal Lunch Break")
         lunchSettingsLayout.addWidget(label, 0, 0)
-        self.lunchTime = AdvancedTimeEdit(QtCore.QTime(0, 0).addSecs(self.config["lunchBreak"] * 60))
+        self.lunchTime = AdvancedTimeEdit(
+            QtCore.QTime(0, 0).addSecs(self.config["lunchBreak"] * 60)
+        )
         lunchSettingsLayout.addWidget(self.lunchTime, 0, 1)
         lunchSettingsWidgets.setLayout(lunchSettingsLayout)
 
@@ -195,8 +218,10 @@ class SettingsDialog(QtWidgets.QDialog):
         generalSettingsWidgets = QtWidgets.QGroupBox("General Settings")
         self.autoCalcEndTime = QtWidgets.QCheckBox("Forecast end time")
         self.autoCalcEndTime.setChecked(self.config["forecastEndTimes"])
-        _autoCalcEndTimeText = "This will automatically calculate the end time of the day according " \
-                               "to the supposed working hours for this day"
+        _autoCalcEndTimeText = (
+            "This will automatically calculate the end time of the day according "
+            "to the supposed working hours for this day"
+        )
         self.autoCalcEndTime.setToolTip(_autoCalcEndTimeText)
         self.autoCalcEndTime.setWhatsThis(_autoCalcEndTimeText)
 
@@ -226,7 +251,9 @@ class SettingsDialog(QtWidgets.QDialog):
         self.uidLabel = QtWidgets.QLabel("User ID")
         self.uidLE = QtWidgets.QLineEdit(self.config["uid"])
         self.passwordLabel = QtWidgets.QLabel("Password")
-        self.passwordLE = QtWidgets.QLineEdit(keyring.get_password("jiraconnection", self.config["uid"]))
+        self.passwordLE = QtWidgets.QLineEdit(
+            keyring.get_password("jiraconnection", self.config["uid"])
+        )
         self.passwordLE.setEchoMode(QtWidgets.QLineEdit.Password)
         self.jiraVerifyButton = QtWidgets.QPushButton("Verify")
         self.jiraVerifyButton.clicked.connect(self.verifyJira)
@@ -240,7 +267,9 @@ class SettingsDialog(QtWidgets.QDialog):
 
         workPackageSettingsWidgets.setLayout(workPackageSettingsLayout)
 
-        buttonbox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
+        buttonbox = QtWidgets.QDialogButtonBox(
+            QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel
+        )
         buttonbox.accepted.connect(self.accept)
         buttonbox.rejected.connect(self.reject)
 
@@ -253,7 +282,9 @@ class SettingsDialog(QtWidgets.QDialog):
 
     def accept(self):
         cfg = self.getConfig()
-        cfg["hours"] = [timeToMinutes(QtCore.QTime(0, 0))] + [timeToMinutes(x.time()) for x in self.workingTimes]
+        cfg["hours"] = [timeToMinutes(QtCore.QTime(0, 0))] + [
+            timeToMinutes(x.time()) for x in self.workingTimes
+        ]
         cfg["lunchBreak"] = timeToMinutes(self.lunchTime.time())
         cfg["connectHoursAndMinutes"] = self.hourWrapAround.isChecked()
         cfg["forecastEndTimes"] = self.autoCalcEndTime.isChecked()
@@ -270,12 +301,21 @@ class SettingsDialog(QtWidgets.QDialog):
     def verifyJira(self):
         if self.uidLE.text() and self.passwordLE.text():
             try:
-                getJiraInstance(self.jiraUrlLE.text().rstrip("/"), self.uidLE.text(), self.passwordLE.text())
-                QtWidgets.QMessageBox.information(self, "Jira Connection OK",
-                                                  "Connection to Jira established\n User and Password accepted",
-                                                  QtWidgets.QMessageBox.Ok)
+                getJiraInstance(
+                    self.jiraUrlLE.text().rstrip("/"),
+                    self.uidLE.text(),
+                    self.passwordLE.text(),
+                )
+                QtWidgets.QMessageBox.information(
+                    self,
+                    "Jira Connection OK",
+                    "Connection to Jira established\n User and Password accepted",
+                    QtWidgets.QMessageBox.Ok,
+                )
             except Exception as e:
-                QtWidgets.QMessageBox.warning(self, "Jira Connection Error", str(e), QtWidgets.QMessageBox.Ok)
+                QtWidgets.QMessageBox.warning(
+                    self, "Jira Connection Error", str(e), QtWidgets.QMessageBox.Ok
+                )
 
     @staticmethod
     def saveConfig(cfg):
@@ -300,12 +340,17 @@ class SettingsDialog(QtWidgets.QDialog):
         t1 = 8 * 60 + 15
         t2 = 5 * 60 + 30
         t3 = 0
-        cfg = {"hours": [minutesToTime(x) for x in config.get("hours", [t3, t1, t1, t1, t1, t2, t3, t3])],
-               "lunchBreak": config.get("lunchBreak", 30),
-               "connectHoursAndMinutes": config.get("connectHoursAndMinutes", False),
-               "forecastEndTimes": config.get("forecastEndTimes", True),
-               "minimize": config.get("minimize", True),
-               "url": config.get("url", "https://jira-ibs.zone2.agileci.conti.de"),
-               "uid": config.get("uid", "")}
+        cfg = {
+            "hours": [
+                minutesToTime(x)
+                for x in config.get("hours", [t3, t1, t1, t1, t1, t2, t3, t3])
+            ],
+            "lunchBreak": config.get("lunchBreak", 30),
+            "connectHoursAndMinutes": config.get("connectHoursAndMinutes", False),
+            "forecastEndTimes": config.get("forecastEndTimes", True),
+            "minimize": config.get("minimize", True),
+            "url": config.get("url", "https://jira-ibs.zone2.agileci.conti.de"),
+            "uid": config.get("uid", ""),
+        }
         AdvancedTimeEdit.connectHoursAndMinutes = cfg["connectHoursAndMinutes"]
         return cfg
