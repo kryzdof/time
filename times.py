@@ -1,3 +1,4 @@
+import csv
 import sys
 import json
 import os
@@ -28,14 +29,17 @@ class MainWindow(QtWidgets.QMainWindow):
         topLineLayout.addWidget(self.datetime, 0, 0, 1, 3)
         self.oldDateTime = self.datetime.date()
 
+        exportButton = QtWidgets.QPushButton("Export")
+        exportButton.clicked.connect(self.onExportClicked)
+        topLineLayout.addWidget(exportButton, 0, 6)
+
         self.hoursZA = QtWidgets.QLabel("ZA")
         self.hoursTotal = QtWidgets.QLabel("Total")
+        topLineLayout.addWidget(self.hoursZA, 0, 7)
+        topLineLayout.addWidget(self.hoursTotal, 0, 8)
 
         settingsButton = QtWidgets.QPushButton("Settings")
         settingsButton.clicked.connect(self.onSettingsClicked)
-        topLineLayout.addWidget(self.hoursZA, 0, 6)
-        topLineLayout.addWidget(self.hoursTotal, 0, 8)
-
         topLineLayout.addWidget(settingsButton, 0, 9)
 
         workpackagesButton = QtWidgets.QPushButton("WP")
@@ -331,6 +335,58 @@ class MainWindow(QtWidgets.QMainWindow):
     def openWorkPackageView(self):
         self.workPackageView.show()
 
+    def onExportClicked(self):
+        self.saveMonth()
+        file = rf"data\{self.datetime.date().toString('MMMM yyyy')}.json"
+        csvFile = rf"{os.environ['USERPROFILE']}\Desktop\timesExport.csv"
+        if os.path.exists(file):
+            with open(file, "r") as fp:
+                data = json.load(fp)
+                date = self.datetime.date()
+                with open(csvFile, "w", newline='') as out:
+                    writer = csv.writer(out)
+                    for x in range(date.daysInMonth()):
+                        # backwards compatibility:
+                        _data = data[f"{x}"]
+                        if len(_data) == 3:
+                            s, e, v = _data
+                            lb = True
+                            ho = True
+                            timestamps = [0, 0, [(0, 0)] * 10]
+                        elif len(_data) == 4:
+                            s, e, v, lb = _data
+                            ho = True
+                            timestamps = [0, 0, [(0, 0)] * 10]
+                        elif len(_data) == 5:
+                            s, e, v, lb, timestamps = _data
+                            ho = True
+                        else:
+                            s, e, v, lb, ho, timestamps = _data
+                        if timestamps[0] != 0:
+                            # special handling for timestamps
+                            for s, e in timestamps[2]:
+                                if s != 0:
+                                    start = minutesToTime(s)
+                                    end = minutesToTime(e)
+                                    code = 103 if ho else 0
+                                    writer.writerow([
+                                        f"{x + 1}.{self.datetime.date().toString('MM.yyyy')}",
+                                        f"{start.hour():02}:{start.minute():02}",
+                                        f"{end.hour():02}:{end.minute():02}",
+                                        code
+                                        ])
+                        elif s != 0:
+                            start = minutesToTime(s)
+                            end = minutesToTime(e)
+                            code = 103 if ho else 0
+                            writer.writerow([
+                                f"{x + 1}.{self.datetime.date().toString('MM.yyyy')}",
+                                f"{start.hour():02}:{start.minute():02}",
+                                f"{end.hour():02}:{end.minute():02}",
+                                code
+                                ])
+        os.system(f"start {os.path.dirname(csvFile)}")
+
     def onSettingsClicked(self):
         if self.settings.exec_():
             self.config = self.settings.getConfig()
@@ -520,9 +576,9 @@ class MainWindow(QtWidgets.QMainWindow):
     def setZAHours(self, za: int):
         if za < 0:
             za = abs(za)
-            self.hoursZA.setText(f"za: -{za // 3600}:{za % 3600 // 60:002}")
+            self.hoursZA.setText(f"ZA: -{za // 3600}:{za % 3600 // 60:002}")
         elif za >= 0:
-            self.hoursZA.setText(f"za: {za // 3600}:{za % 3600 // 60:002}")
+            self.hoursZA.setText(f"ZA: {za // 3600}:{za % 3600 // 60:002}")
 
     def onMonthChanged(self):
         self.saveMonth()
@@ -781,6 +837,7 @@ class WorkPackageWidget(QtWidgets.QWidget):
             if JiraWriteLog(mainWindow.config, wp.ticket, loggedTime):
                 print("log written - deleting logged time")
                 wp.resetTime()
+                mainWindow.saveWorkPackages()
 
 
 class WorkPackageView(QtWidgets.QDialog):

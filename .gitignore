@@ -5,5 +5,6 @@ build/*
 dist/
 !dist/times.exe
 data/*
+venv
 /settings.json
 /workpackages.json
