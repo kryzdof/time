@@ -21,7 +21,7 @@ pefile==2022.5.30
 platformdirs==2.6.0
 pycodestyle==2.10.0
 pyflakes==3.0.1
-pyinstaller==5.6.2
+pyinstaller==5.7.0
 pyinstaller-hooks-contrib==2022.14
 pyparsing==3.0.9
 PySide2==5.15.2.1
