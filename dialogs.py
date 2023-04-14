@@ -1,9 +1,10 @@
-import json
 import calendar
-import keyring
-from keyring.backends.Windows import WinVaultKeyring
+import json
 from itertools import zip_longest
+
+import keyring
 from PySide2 import QtCore, QtWidgets, QtGui
+from keyring.backends.Windows import WinVaultKeyring
 
 from utils import minutesToTime, timeToMinutes, getJiraInstance, resource_path
 
@@ -321,7 +322,7 @@ class SettingsDialog(QtWidgets.QDialog):
     def saveConfig(cfg):
         file = "settings.json"
         with open(file, "w") as fp:
-            json.dump(cfg, fp)
+            json.dump(cfg, fp, indent=4)
 
     @staticmethod
     def loadConfig():
