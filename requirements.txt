@@ -15,7 +15,7 @@ more-itertools==9.1.0
 mypy-extensions==1.0.0
 oauthlib==3.2.2
 packaging==23.0
-pathspec==0.11.0
+pathspec==0.11.1
 pefile==2023.2.7
 platformdirs==3.1.0
 pycodestyle==2.10.0
