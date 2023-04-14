@@ -1,9 +1,9 @@
+import calendar
 import csv
-import sys
 import json
 import os
 import shutil
-import calendar
+import sys
 import time
 
 from PySide2 import QtCore, QtWidgets, QtGui
@@ -310,7 +310,7 @@ class MainWindow(QtWidgets.QMainWindow):
             for wp in self.workPackages:
                 workPackages.append(wp.asJson())
             with open(file, "w") as fp:
-                json.dump(workPackages, fp)
+                json.dump(workPackages, fp, indent=4)
 
     def newWorkPackage(self):
         name, ok = QtWidgets.QInputDialog.getText(
@@ -600,7 +600,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if not os.path.exists("data"):
             os.mkdir("data")
         with open(rf"data\{data['MonthAndYear']}.json", "w") as fp:
-            json.dump(data, fp)
+            json.dump(data, fp, indent=4)
 
     def loadMonth(self):
         # load all data if possible
