@@ -1,10 +1,11 @@
 # Default ignored files
 /workspace.xml
 .idea/*
-build/*
-dist/
-!dist/times.exe
-data/*
-venv
+/build/
+/dist/
+/data/*
+/venv/
 /settings.json
 /workpackages.json
+/release/
+__pycache__
