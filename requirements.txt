@@ -23,7 +23,7 @@ psutil==5.9.4
 pycodestyle==2.10.0
 pyflakes==3.0.1
 pyinstaller==5.8.0
-pyinstaller-hooks-contrib==2023.0
+pyinstaller-hooks-contrib==2023.2
 pyparsing==3.0.9
 PySide2==5.15.2.1
 pywin32==306
