@@ -6,6 +6,10 @@ import shutil
 import sys
 import time
 
+import psutil
+import win32com.client
+import win32gui
+import win32process
 from PySide2 import QtCore, QtWidgets, QtGui
 
 import dialogs
@@ -1013,12 +1017,62 @@ def start_GUI():
     app.setApplicationName("Time Converter")
     app.setWindowIcon(QtGui.QPixmap(resource_path("time.png")))
     app.setQuitOnLastWindowClosed(False)
-    window = MainWindow(app=app)
-    window.setWindowIcon(QtGui.QPixmap(resource_path("time.png")))
-    window.show()
 
-    app.exec_()
-    window.saveWorkPackages()
+    lockfile = "lockfile"
+    start = True
+    if os.path.exists(lockfile):
+        with open(lockfile, "r") as fp:
+            pid = int(fp.read())
+            if psutil.pid_exists(pid) and psutil.Process(pid).name() in ["times.exe", "python.exe"]:
+                window = findWindow(pid)
+                if window:
+                    ret = QtWidgets.QMessageBox.warning(QtWidgets.QWidget(), "UltraTime already running",
+                                                        "Do you want to start a second instance?\n\n"
+                                                        "It might lead to inconsistencies or overwriting of time data!\n"
+                                                        "Click open to activate the first instance",
+                                                        QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No | QtWidgets.QMessageBox.Open,
+                                                        QtWidgets.QMessageBox.Open)
+                else:
+                    ret = QtWidgets.QMessageBox.warning(QtWidgets.QWidget(), "UltraTime already running",
+                                                        "Do you want to start a second instance?\n\n"
+                                                        "It might lead to inconsistencies or overwriting of time data!",
+                                                        QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                                                        QtWidgets.QMessageBox.No)
+                if QtWidgets.QMessageBox.No == ret:
+                    start = False
+                    print("Aborted starting")
+                if QtWidgets.QMessageBox.Open == ret:
+                    start = False
+                    shell = win32com.client.Dispatch("WScript.Shell")
+                    shell.SendKeys('%')
+                    win32gui.SetForegroundWindow(window)
+                    print("Aborted starting - Showed other instance instead")
+
+    if start:
+        with open(lockfile, "w") as fp:
+            fp.write(str(os.getpid()))
+
+        window = MainWindow(app=app)
+        window.setWindowIcon(QtGui.QPixmap(resource_path("time.png")))
+        window.show()
+
+        app.exec_()
+        window.saveWorkPackages()
+        os.remove(lockfile)
+
+
+def windowEnumerationHandler(hwnd, top_windows):
+    top_windows.append((hwnd, win32gui.GetWindowText(hwnd), win32process.GetWindowThreadProcessId(hwnd)[1]))
+
+
+def findWindow(pid):
+    result = None
+    top_windows = []
+    win32gui.EnumWindows(windowEnumerationHandler, top_windows)
+    for i in top_windows:
+        if pid == i[2] and "UltraTime" == i[1]:
+            result = i[0]
+    return result
 
 
 if __name__ == "__main__":
