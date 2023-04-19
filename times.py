@@ -1026,18 +1026,20 @@ def start_GUI():
             if psutil.pid_exists(pid) and psutil.Process(pid).name() in ["times.exe", "python.exe"]:
                 window = findWindow(pid)
                 if window:
-                    ret = QtWidgets.QMessageBox.warning(QtWidgets.QWidget(), "UltraTime already running",
-                                                        "Do you want to start a second instance?\n\n"
-                                                        "It might lead to inconsistencies or overwriting of time data!\n"
-                                                        "Click open to activate the first instance",
-                                                        QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No | QtWidgets.QMessageBox.Open,
-                                                        QtWidgets.QMessageBox.Open)
+                    ret = QtWidgets.QMessageBox.warning(
+                        QtWidgets.QWidget(), "UltraTime already running",
+                        "Do you want to start a second instance?\n\n"
+                        "It might lead to inconsistencies or overwriting of time data!\n"
+                        "Click open to activate the first instance",
+                        QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No | QtWidgets.QMessageBox.Open,
+                        QtWidgets.QMessageBox.Open)
                 else:
-                    ret = QtWidgets.QMessageBox.warning(QtWidgets.QWidget(), "UltraTime already running",
-                                                        "Do you want to start a second instance?\n\n"
-                                                        "It might lead to inconsistencies or overwriting of time data!",
-                                                        QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-                                                        QtWidgets.QMessageBox.No)
+                    ret = QtWidgets.QMessageBox.warning(
+                        QtWidgets.QWidget(), "UltraTime already running",
+                        "Do you want to start a second instance?\n\n"
+                        "It might lead to inconsistencies or overwriting of time data!",
+                        QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                        QtWidgets.QMessageBox.No)
                 if QtWidgets.QMessageBox.No == ret:
                     start = False
                     print("Aborted starting")
