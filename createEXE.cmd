@@ -1,1 +1,1 @@
-pyinstaller times.spec
+pyinstaller times.spec -y
