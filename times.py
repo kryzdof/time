@@ -260,9 +260,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.trayIcon.setContextMenu(self.menu)
 
     def trayActivated(self, reason):
-        if reason == self.trayIcon.Trigger:
+        if reason == QtWidgets.QSystemTrayIcon.Trigger:
             self.restore()
-        if reason == self.trayIcon.MiddleClick:
+        if reason == QtWidgets.QSystemTrayIcon.MiddleClick:
             self.app.exit()
 
     def restore(self):
