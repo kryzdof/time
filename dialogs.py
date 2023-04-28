@@ -3,7 +3,7 @@ import json
 from itertools import zip_longest
 
 import keyring
-from PySide2 import QtCore, QtWidgets, QtGui
+from PySide6 import QtCore, QtWidgets, QtGui
 from keyring.backends.Windows import WinVaultKeyring
 
 from utils import minutesToTime, timeToMinutes, getJiraInstance, resource_path

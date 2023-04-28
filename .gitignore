@@ -9,3 +9,4 @@
 /workpackages.json
 /release/
 __pycache__
+/lockfile
