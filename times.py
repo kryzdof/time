@@ -1058,7 +1058,7 @@ def start_GUI():
         window.setWindowIcon(QtGui.QPixmap(resource_path("time.png")))
         window.show()
 
-        app.exec_()
+        app.exec()
         window.saveWorkPackages()
         os.remove(lockfile)
 
