@@ -134,6 +134,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.HOCheckBoxes.append(HOCheckBox)
             mainWidgetLayout.addWidget(HOCheckBox, days, 10)
 
+        mainWidgetLayout.setRowStretch(31, 100)
         self.setStyleSheet("QPushButton:checked {background-color: LightGreen;}")
         mainWidget.setLayout(mainWidgetLayout)
 
