@@ -2,7 +2,7 @@ import os
 import sys
 
 import keyring
-from PySide2 import QtCore, QtWidgets
+from PySide6 import QtCore, QtWidgets
 from jira import JIRA, JIRAError
 from requests.exceptions import ConnectTimeout
 

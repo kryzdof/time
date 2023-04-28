@@ -10,7 +10,7 @@ import psutil
 import win32com.client
 import win32gui
 import win32process
-from PySide2 import QtCore, QtWidgets, QtGui
+from PySide6 import QtCore, QtWidgets, QtGui
 
 import dialogs
 from utils import resource_path, minutesToTime, timeToMinutes, JiraWriteLog
@@ -144,7 +144,7 @@ class MainWindow(QtWidgets.QMainWindow):
             QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff
         )
         scrollArea.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
-        scrollArea.setSizeAdjustPolicy(scrollArea.AdjustToContents)
+        scrollArea.setSizeAdjustPolicy(QtWidgets.QAbstractScrollArea.AdjustToContents)
         scrollArea.ensureWidgetVisible(
             self.dateButtons[self.datetime.date().day() - 1], 200, 200
         )
@@ -222,7 +222,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.menu = QtWidgets.QMenu()
         self.actions = dict()
 
-        action_newWP = QtWidgets.QAction("New Work Package")
+        action_newWP = QtGui.QAction("New Work Package")
         action_newWP.triggered.connect(self.newWorkPackage)
         self.menu.addAction(action_newWP)
         self.actions["New Work Package"] = action_newWP
@@ -235,24 +235,24 @@ class MainWindow(QtWidgets.QMainWindow):
             self.menu.addSeparator()
             print("TESTtest")
 
-        action_startDay = QtWidgets.QAction("Start Day")
+        action_startDay = QtGui.QAction("Start Day")
         action_startDay.triggered.connect(self.startDay)
         self.menu.addAction(action_startDay)
         self.actions["Start Day"] = action_startDay
 
-        action_endDay = QtWidgets.QAction("End Day")
+        action_endDay = QtGui.QAction("End Day")
         action_endDay.triggered.connect(self.endDay)
         self.menu.addAction(action_endDay)
         self.actions["End Day"] = action_endDay
 
         self.menu.addSeparator()
 
-        action_open = QtWidgets.QAction("Open")
+        action_open = QtGui.QAction("Open")
         action_open.triggered.connect(self.restore)
         self.menu.addAction(action_open)
         self.actions["Open"] = action_open
 
-        action_exit = QtWidgets.QAction("Exit")
+        action_exit = QtGui.QAction("Exit")
         action_exit.triggered.connect(self.app.exit)
         self.menu.addAction(action_exit)
         self.actions["Exit"] = action_exit
@@ -318,11 +318,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def newWorkPackage(self):
         name, ok = QtWidgets.QInputDialog.getText(
-            self, "Name of new Work Package", "Please put in the name"
+            self, "Name of new Work Package", "Please put in the name", QtWidgets.QLineEdit.Normal
         )
         while name in [wp.name for wp in self.workPackages] and ok:
             name, ok = QtWidgets.QInputDialog.getText(
-                self, "Name of new Work Package", "The name has to be unique"
+                self, "Name of new Work Package", "The name has to be unique", QtWidgets.QLineEdit.Normal
             )
         if ok:
             wp = WorkPackage(name)
@@ -664,7 +664,7 @@ class MainWindow(QtWidgets.QMainWindow):
         super(MainWindow, self).closeEvent(event)
 
 
-class WorkPackage(QtWidgets.QAction):
+class WorkPackage(QtGui.QAction):
     def __init__(self, name, ticket=None, loggedtime=0):
         self.name = name
         self.ticket = ticket
@@ -796,7 +796,7 @@ class WorkPackageWidget(QtWidgets.QWidget):
             QtGui.QDesktopServices.openUrl(QtCore.QUrl(url))
         else:
             name, ok = QtWidgets.QInputDialog.getText(
-                self, "Ticket-ID (e.g. GMCTC-1234)", "Ticket"
+                self, "Ticket-ID (e.g. GMCTC-1234)", "Ticket", QtWidgets.QLineEdit.Normal
             )
             if ok:
                 self._workpackage.ticket = name
