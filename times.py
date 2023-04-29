@@ -169,7 +169,6 @@ class MainWindow(QtWidgets.QMainWindow):
         vSplitter.setChildrenCollapsible(False)
         vSplitter.handle(1).setCursor(QtCore.Qt.ArrowCursor)
 
-
         self.settings = dialogs.SettingsDialog(self)
         self.loadMonth()
         self.config = self.settings.getConfig()
@@ -177,7 +176,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.workPackageView = WorkPackageView(self)
         self.workPackageView.hide()
         self.workpackagesButton.setChecked(self.config["wpActive"])
-
 
         self.hSplitter = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
         self.hSplitter.addWidget(vSplitter)
@@ -431,7 +429,6 @@ class MainWindow(QtWidgets.QMainWindow):
                     height = self.height()
                     self.adjustSize()
                     self.resize(self.width(), height)
-
 
     def openDetailTimesDialog(self):
         pushButton = self.sender()
