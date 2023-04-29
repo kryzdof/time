@@ -792,7 +792,8 @@ class WorkPackageWidget(QtWidgets.QWidget):
 
     def openUrl(self):
         if self._workpackage.ticket:
-            url = f"{self.urlStart}/browse/{self._workpackage.ticket}"
+            urlStart = self.getMainWindow(self.parent()).config["url"]
+            url = f"{urlStart}/browse/{self._workpackage.ticket}"
             QtGui.QDesktopServices.openUrl(QtCore.QUrl(url))
         else:
             name, ok = QtWidgets.QInputDialog.getText(
