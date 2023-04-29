@@ -46,9 +46,10 @@ class MainWindow(QtWidgets.QMainWindow):
         settingsButton.clicked.connect(self.onSettingsClicked)
         topLineLayout.addWidget(settingsButton, 0, 9)
 
-        workpackagesButton = QtWidgets.QPushButton("WP")
-        workpackagesButton.clicked.connect(self.openWorkPackageView)
-        topLineLayout.addWidget(workpackagesButton, 0, 10)
+        self.workpackagesButton = QtWidgets.QPushButton("WP")
+        self.workpackagesButton.setCheckable(True)
+        self.workpackagesButton.clicked.connect(self.openWorkPackageView)
+        topLineLayout.addWidget(self.workpackagesButton, 0, 10)
 
         topLine.setLayout(topLineLayout)
         topLine.setFixedHeight(40)
@@ -162,18 +163,32 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.vacationCheckBoxes[x], self.vacationCheckBoxes[x + 1]
             )
 
-        splitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
-        splitter.addWidget(topLine)
-        splitter.addWidget(scrollArea)
-        splitter.setChildrenCollapsible(False)
-        splitter.handle(1).setCursor(QtCore.Qt.ArrowCursor)
+        vSplitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
+        vSplitter.addWidget(topLine)
+        vSplitter.addWidget(scrollArea)
+        vSplitter.setChildrenCollapsible(False)
+        vSplitter.handle(1).setCursor(QtCore.Qt.ArrowCursor)
+
 
         self.settings = dialogs.SettingsDialog(self)
-        self.setCentralWidget(splitter)
         self.loadMonth()
         self.config = self.settings.getConfig()
         self.workPackages = self.loadWorkPackages()
         self.workPackageView = WorkPackageView(self)
+        self.workPackageView.hide()
+        self.workpackagesButton.setChecked(self.config["wpActive"])
+
+
+        self.hSplitter = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
+        self.hSplitter.addWidget(vSplitter)
+        wpl = self.config["wpLocation"]
+        if wpl < 2:
+            self.hSplitter.insertWidget(wpl, self.workPackageView)
+
+        if self.config["wpActive"]:
+            self.workPackageView.show()
+
+        self.setCentralWidget(self.hSplitter)
 
         self.app = app
         if self.app:
@@ -193,6 +208,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.cyclicFunction)
         self.timer.start(1000)
+        self.adjustSize()
 
     def cyclicFunction(self):
         self.cyclicCounter = self.cyclicCounter % 60 + 1
@@ -233,7 +249,6 @@ class MainWindow(QtWidgets.QMainWindow):
             for wp in self.workPackages:
                 self.menu.addAction(wp)
             self.menu.addSeparator()
-            print("TESTtest")
 
         action_startDay = QtGui.QAction("Start Day")
         action_startDay.triggered.connect(self.startDay)
@@ -337,7 +352,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.createTrayMenu()
 
     def openWorkPackageView(self):
-        self.workPackageView.show()
+        self.workPackageView.setVisible(self.workpackagesButton.isChecked())
 
     def onExportClicked(self):
         self.saveMonth()
@@ -393,9 +408,30 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def onSettingsClicked(self):
         if self.settings.exec_():
+            oldConfig = self.config
             self.config = self.settings.getConfig()
+            wplChanged = self.config["wpLocation"] != oldConfig["wpLocation"]
             self.updateDateLabels()
             self.app.setQuitOnLastWindowClosed(not self.config["minimize"])
+            if wplChanged:
+                self.workPackageView.hide()
+                wpl = self.config["wpLocation"]
+                if wpl < 2:
+                    self.hSplitter.insertWidget(wpl, self.workPackageView)
+                    self.workpackagesButton.setChecked(True)
+                    self.workPackageView.show()
+                    height = self.height()
+                    self.adjustSize()
+                    self.resize(self.width(), height)
+                else:
+                    self.workPackageView.setParent(None)
+                    self.workPackageView = WorkPackageView(self)
+                    self.workPackageView.show()
+                    self.workPackageView.adjustSize()
+                    height = self.height()
+                    self.adjustSize()
+                    self.resize(self.width(), height)
+
 
     def openDetailTimesDialog(self):
         pushButton = self.sender()

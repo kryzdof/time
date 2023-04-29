@@ -244,8 +244,8 @@ class SettingsDialog(QtWidgets.QDialog):
 
         generalSettingsWidgets.setLayout(generalSettingsLayout)
 
-        workPackageSettingsLayout = QtWidgets.QGridLayout()
-        workPackageSettingsWidgets = QtWidgets.QGroupBox("Jira Settings")
+        JiraSettingsLayout = QtWidgets.QGridLayout()
+        JiraSettingsWidgets = QtWidgets.QGroupBox("Jira Settings")
 
         self.jiraUrlLabel = QtWidgets.QLabel("Jira URL")
         self.jiraUrlLE = QtWidgets.QLineEdit(self.config["url"])
@@ -258,15 +258,28 @@ class SettingsDialog(QtWidgets.QDialog):
         self.passwordLE.setEchoMode(QtWidgets.QLineEdit.Password)
         self.jiraVerifyButton = QtWidgets.QPushButton("Verify")
         self.jiraVerifyButton.clicked.connect(self.verifyJira)
-        workPackageSettingsLayout.addWidget(self.jiraUrlLabel, 0, 0)
-        workPackageSettingsLayout.addWidget(self.jiraUrlLE, 0, 1, 1, 2)
-        workPackageSettingsLayout.addWidget(self.uidLabel, 1, 0)
-        workPackageSettingsLayout.addWidget(self.uidLE, 1, 1, 1, 2)
-        workPackageSettingsLayout.addWidget(self.passwordLabel, 2, 0)
-        workPackageSettingsLayout.addWidget(self.passwordLE, 2, 1, 1, 2)
-        workPackageSettingsLayout.addWidget(self.jiraVerifyButton, 3, 2)
+        JiraSettingsLayout.addWidget(self.jiraUrlLabel, 0, 0)
+        JiraSettingsLayout.addWidget(self.jiraUrlLE, 0, 1, 1, 2)
+        JiraSettingsLayout.addWidget(self.uidLabel, 1, 0)
+        JiraSettingsLayout.addWidget(self.uidLE, 1, 1, 1, 2)
+        JiraSettingsLayout.addWidget(self.passwordLabel, 2, 0)
+        JiraSettingsLayout.addWidget(self.passwordLE, 2, 1, 1, 2)
+        JiraSettingsLayout.addWidget(self.jiraVerifyButton, 3, 2)
 
-        workPackageSettingsWidgets.setLayout(workPackageSettingsLayout)
+        JiraSettingsWidgets.setLayout(JiraSettingsLayout)
+
+        workPackageLayout = QtWidgets.QGridLayout()
+        workPackageLocationWidgets = QtWidgets.QGroupBox("WorkPackage Settings")
+        self.workPackageLocationLabel = QtWidgets.QLabel("Workpackage Location:")
+        self.workPackageLocationCombo = QtWidgets.QComboBox()
+        self.workPackageLocationCombo.insertItems(0, ["left", "right", "popup"])
+        self.workPackageLocationCombo.setCurrentIndex(self.config["wpLocation"])
+        self.workPackageOnStartUpActive = QtWidgets.QCheckBox("Show Work Packages on Start")
+        self.workPackageOnStartUpActive.setChecked(self.config["wpActive"])
+        workPackageLayout.addWidget(self.workPackageLocationLabel, 0, 0)
+        workPackageLayout.addWidget(self.workPackageLocationCombo, 0, 1)
+        workPackageLayout.addWidget(self.workPackageOnStartUpActive, 1, 0, 1, 2)
+        workPackageLocationWidgets.setLayout(workPackageLayout)
 
         buttonbox = QtWidgets.QDialogButtonBox(
             QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel
@@ -277,7 +290,8 @@ class SettingsDialog(QtWidgets.QDialog):
         mainLayout.addWidget(timeSettingsWidgets, 0, 0, 2, 1)
         mainLayout.addWidget(lunchSettingsWidgets, 0, 1)
         mainLayout.addWidget(generalSettingsWidgets, 1, 1)
-        mainLayout.addWidget(workPackageSettingsWidgets, 2, 0, 1, 2)
+        mainLayout.addWidget(workPackageLocationWidgets, 2, 0, 1, 2)
+        mainLayout.addWidget(JiraSettingsWidgets, 3, 0, 1, 2)
         mainLayout.addWidget(buttonbox)
         self.setLayout(mainLayout)
 
@@ -295,6 +309,8 @@ class SettingsDialog(QtWidgets.QDialog):
             if keyring.get_password("jiraconnection", cfg["uid"]):
                 keyring.delete_password("jiraconnection", cfg["uid"])
         cfg["uid"] = self.uidLE.text()
+        cfg["wpLocation"] = self.workPackageLocationCombo.currentIndex()
+        cfg["wpActive"] = self.workPackageOnStartUpActive.isChecked()
         keyring.set_password("jiraconnection", cfg["uid"], self.passwordLE.text())
         self.saveConfig(cfg)
         super().accept()
@@ -352,6 +368,8 @@ class SettingsDialog(QtWidgets.QDialog):
             "minimize": config.get("minimize", True),
             "url": config.get("url", "https://jira-ibs.zone2.agileci.conti.de"),
             "uid": config.get("uid", ""),
+            "wpLocation": config.get("wpLocation", 2),
+            "wpActive": config.get("wpActive", False)
         }
         AdvancedTimeEdit.connectHoursAndMinutes = cfg["connectHoursAndMinutes"]
         return cfg
