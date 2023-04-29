@@ -407,7 +407,7 @@ class MainWindow(QtWidgets.QMainWindow):
         os.system(f"start {os.path.dirname(csvFile)}")
 
     def onSettingsClicked(self):
-        if self.settings.exec_():
+        if self.settings.exec():
             oldConfig = self.config
             self.config = self.settings.getConfig()
             wplChanged = self.config["wpLocation"] != oldConfig["wpLocation"]
@@ -438,7 +438,7 @@ class MainWindow(QtWidgets.QMainWindow):
         dlg = dialogs.DetailTimesDialog(
             self, pushButton.text(), pushButton.timestamps[2]
         )
-        if dlg.exec_():
+        if dlg.exec():
             pushButton.timestamps = dlg.getDetails()
             self.updateDateLabels()
 
@@ -843,7 +843,7 @@ class WorkPackageWidget(QtWidgets.QWidget):
         self.started.emit(checked)
 
     def editWP(self):
-        WorkPackageEditDialog(self, self._workpackage).exec_()
+        WorkPackageEditDialog(self, self._workpackage).exec()
 
     def removeWP(self):
         ret = QtWidgets.QMessageBox.warning(
