@@ -45,4 +45,4 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: zipfile
-        path: test.zip
+        path: distFolder.zip
