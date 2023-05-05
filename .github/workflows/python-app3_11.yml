@@ -41,3 +41,8 @@ jobs:
     - name: zip output
       run:
         python -c "import shutil; shutil.make_archive('distFolder', 'zip', 'dist/times')"
+    - name: archive zipfile
+      uses: actions/upload-artifact@v3
+      with:
+        name: zipfile
+        path: test.zip
