@@ -44,5 +44,6 @@ jobs:
     - name: archive zipfile
       uses: actions/upload-artifact@v3
       with:
-        name: zipfile
+        name: distFolder
         path: distFolder.zip
+        retention-days: 3
