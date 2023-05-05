@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  python3_11:
 
     runs-on: windows-latest
 
