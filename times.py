@@ -952,7 +952,7 @@ class WorkPackageView(QtWidgets.QDialog):
                 return self.getMainWindow(parent.parent())
         else:
             return None
-        
+
     def closeEvent(self, event):
         mainWnd = self.getMainWindow(self.parent())
         mainWnd.workpackagesButton.setChecked(False)
