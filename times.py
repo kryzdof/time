@@ -844,16 +844,18 @@ class WorkPackageWidget(QtWidgets.QWidget):
         WorkPackageEditDialog(self, self._workpackage).exec()
 
     def removeWP(self):
-        ret = QtWidgets.QMessageBox.warning(
-            self,
-            "Delete workpackage",
-            "The workpackage will be deleted together with all the logged time. Are you sure you want to delete it?",
-            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-        )
+        if self.getTotalTime() > 60 or self.isActive():
+            ret = QtWidgets.QMessageBox.warning(
+                self,
+                "Delete workpackage",
+                "The workpackage will be deleted together with all the logged time. Are you sure you want to delete it?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+            )
+        else:
+            ret = QtWidgets.QMessageBox.Yes
         if ret == QtWidgets.QMessageBox.Yes:
-            if isinstance(self.parent(), WorkPackageView):
-                self.parent().removeWorkPackage(self)
-                self.parent().parent().removeWorkPackage(self._workpackage)
+            mainWindow = self.getMainWindow(self.parent())
+            mainWindow.removeWorkPackage(self._workpackage)
             self.deleteLater()
 
     def getMainWindow(self, parent):
@@ -893,32 +895,36 @@ class WorkPackageView(QtWidgets.QDialog):
         for wp in wps:
             print(f"workpackage {wp}")
             self.splitter.addWidget((WorkPackageWidget(self, wp)))
-        # self.splitter.setSizeConstraint(QtWidgets.QLayout.SetFixedSize)
-        mainSplitter = QtWidgets.QVBoxLayout()
-        mainSplitter.addLayout(self.splitter)
-        hSplitter = QtWidgets.QHBoxLayout()
+        self.splitter.addStretch(100)
+        scrollArea = QtWidgets.QScrollArea()
+        mainWidget = QtWidgets.QGroupBox()
+        mainWidget.setLayout(self.splitter)
+        scrollArea.setWidget(mainWidget)
+        scrollArea.setWidgetResizable(True)
+        scrollArea.setHorizontalScrollBarPolicy(
+            QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
+        scrollArea.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scrollArea.setSizeAdjustPolicy(QtWidgets.QAbstractScrollArea.AdjustToContents)
 
+        hSplitter = QtWidgets.QHBoxLayout()
         self.totalTimeLabel = QtWidgets.QLabel("")
         self.newWorkPackageButton = QtWidgets.QPushButton("New Work Package")
         self.newWorkPackageButton.clicked.connect(self.parent().newWorkPackage)
-
         hSplitter.addWidget(self.totalTimeLabel)
         hSplitter.addWidget(self.newWorkPackageButton)
+
+        mainSplitter = QtWidgets.QVBoxLayout()
+        mainSplitter.addWidget(scrollArea)
+        # mainSplitter.addLayout(self.splitter)
         mainSplitter.addLayout(hSplitter)
 
         self.setLayout(mainSplitter)
 
     def addWorkPackage(self, wp):
+        self.splitter.removeItem(self.splitter.itemAt(self.splitter.count() - 1))
         self.splitter.addWidget((WorkPackageWidget(self, wp)))
-        self.updateChildrenData()
-
-    def removeWorkPackage(self, wpw):
-        for child in self.findChildren(WorkPackageWidget):
-            if child == wpw:
-                self.children().remove(child)
-                break
-        else:
-            print("nothing found")
+        self.splitter.addStretch(100)
         self.updateChildrenData()
 
     def updateChildrenData(self):
