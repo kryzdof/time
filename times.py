@@ -944,6 +944,20 @@ class WorkPackageView(QtWidgets.QDialog):
             totalTime = f"{int(t // 3600):01d}:{int(t / 60 % 60):02d}:{int(t % 60):02d}"
             self.totalTimeLabel.setText(f"Current Total Time: {totalTime}")
 
+    def getMainWindow(self, parent):
+        if parent:
+            if isinstance(parent, MainWindow):
+                return parent
+            else:
+                return self.getMainWindow(parent.parent())
+        else:
+            return None
+
+    def closeEvent(self, event):
+        mainWnd = self.getMainWindow(self.parent())
+        mainWnd.workpackagesButton.setChecked(False)
+        super().closeEvent(event)
+
 
 class WorkPackageEditDialog(QtWidgets.QDialog):
     def __init__(self, parent, workpackage):
