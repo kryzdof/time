@@ -37,4 +37,4 @@ shiboken6==6.5.2
 tomli==2.0.1
 typing_extensions==4.8.0
 urllib3==2.0.4
-zipp==3.16.2
+zipp==3.17.0
