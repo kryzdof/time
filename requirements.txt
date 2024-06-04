@@ -1,6 +1,6 @@
 altgraph==0.17.4
 backports.tarfile==1.0.0
-black==24.4.0
+black==24.4.2
 certifi==2024.2.2
 charset-normalizer==3.3.2
 click==8.1.7
@@ -11,7 +11,7 @@ idna==3.7
 importlib_metadata==7.1.0
 jaraco.classes==3.4.0
 jaraco.context==5.3.0
-jaraco.functools==4.0.0
+jaraco.functools==4.0.1
 jira==3.8.0
 keyring==25.1.0
 mccabe==0.7.0
