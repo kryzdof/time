@@ -20,7 +20,7 @@ mypy-extensions==1.0.0
 oauthlib==3.2.2
 packaging==24.1
 pathspec==0.12.1
-pefile==2023.2.7
+pefile==2024.8.26
 pillow==10.4.0
 platformdirs==4.2.2
 psutil==6.0.0
