@@ -22,7 +22,7 @@ packaging==24.1
 pathspec==0.12.1
 pefile==2024.8.26
 pillow==10.4.0
-platformdirs==4.2.2
+platformdirs==4.3.6
 psutil==6.0.0
 pycodestyle==2.12.1
 pyflakes==3.2.0
