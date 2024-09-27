@@ -15,7 +15,7 @@ jaraco.functools==4.0.2
 jira==3.8.0
 keyring==25.4.1
 mccabe==0.7.0
-more-itertools==10.3.0
+more-itertools==10.5.0
 mypy-extensions==1.0.0
 oauthlib==3.2.2
 packaging==24.1
