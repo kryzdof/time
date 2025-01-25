@@ -129,7 +129,6 @@ class DetailTimesDialog(QtWidgets.QDialog):
         h = QtCore.QTime.currentTime().hour()
         m = QtCore.QTime.currentTime().minute()
         timeEdit.setTime(QtCore.QTime(h, m))
-        self.updateDiffs()
 
     def updateDiffs(self):
         self.totalDiff = 0
