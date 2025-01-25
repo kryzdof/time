@@ -75,21 +75,21 @@ class DetailTimesDialog(QtWidgets.QDialog):
         for x, timestamps in zip_longest(
             range(10), self.timeStampData, fillvalue=(0, 0)
         ):
-            t = QtCore.QTime(minutesToTime(timestamps[0]))
-            startTimes = AdvancedTimeEdit(t)
-            startTimes.editingFinished.connect(self.updateDiffs)
-            self.startTimes.append(startTimes)
-            mainLayout.addWidget(startTimes, x + 1, 1)
             autoTime = QtWidgets.QPushButton(
                 QtGui.QPixmap(resource_path("time.png")), ""
             )
-            autoTime.QTimeReference = startTimes
             autoTime.clicked.connect(self.updateAutoTime)
             mainLayout.addWidget(autoTime, x + 1, 0)
+            t = QtCore.QTime(minutesToTime(timestamps[0]))
+            startTimes = AdvancedTimeEdit(t)
+            startTimes.timeChanged.connect(self.updateDiffs)
+            self.startTimes.append(startTimes)
+            mainLayout.addWidget(startTimes, x + 1, 1)
+            autoTime.QTimeReference = startTimes
 
             t = QtCore.QTime(minutesToTime(timestamps[1]))
             endTimes = AdvancedTimeEdit(t)
-            endTimes.editingFinished.connect(self.updateDiffs)
+            endTimes.timeChanged.connect(self.updateDiffs)
             self.endTimes.append(endTimes)
             mainLayout.addWidget(endTimes, x + 1, 2)
             autoTime = QtWidgets.QPushButton(
@@ -126,7 +126,9 @@ class DetailTimesDialog(QtWidgets.QDialog):
 
     def updateAutoTime(self):
         timeEdit = self.sender().QTimeReference
-        timeEdit.setTime(QtCore.QTime.currentTime())
+        h = QtCore.QTime.currentTime().hour()
+        m = QtCore.QTime.currentTime().minute()
+        timeEdit.setTime(QtCore.QTime(h, m))
 
     def updateDiffs(self):
         self.totalDiff = 0
