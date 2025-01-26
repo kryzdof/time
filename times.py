@@ -106,10 +106,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.diffTimeLabels.append(label)
             mainWidgetLayout.addWidget(label, days, 6)
 
-            checkbox = QtWidgets.QPushButton()
+            checkbox = dialogs.VacationButton()
             checkbox.clicked.connect(self.updateDateLabels)
-            checkbox.setCheckable(True)
-            checkbox.setIcon(QtGui.QPixmap(resource_path("black-plane.png")))
             self.vacationCheckBoxes.append(checkbox)
             mainWidgetLayout.addWidget(checkbox, days, 7)
 
@@ -213,7 +211,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.timer.timeout.connect(self.cyclicFunction)
         self.timer.start(1000)
         self.adjustSize()
-        self.updateonSitePercentage()
 
     def cyclicFunction(self):
         self.cyclicCounter = self.cyclicCounter % 60 + 1
@@ -499,17 +496,27 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.detailInputs(x)
 
                 calcNeeded = (
-                    seconds[dayOfWeek] and not self.vacationCheckBoxes[x].isChecked()
+                    seconds[dayOfWeek] and
+                    (
+                        not self.vacationCheckBoxes[x].isChecked() or
+                        self.vacationCheckBoxes[x].isChecked() and self.vacationCheckBoxes[x].isZA
+                    )
                 )
                 if calcNeeded:
                     self.starttimeTime[x].show()
                     self.endtimeTime[x].show()
-                    self.diffTimeLabels[x].show()
                     self.autoTimes[x].show()
                     self.diffTimeLabels[x].show()
                     self.fullTimeLabels[x].show()
-                    self.breakCheckBoxes[x].show()
-                    self.HOCheckBoxes[x].show()
+                    if self.vacationCheckBoxes[x].isChecked() and self.vacationCheckBoxes[x].isZA:
+                        self.starttimeTime[x].setEnabled(False)
+                        self.endtimeTime[x].setEnabled(False)
+                        self.autoTimes[x].setEnabled(False)
+                        self.breakCheckBoxes[x].hide()
+                        self.HOCheckBoxes[x].hide()
+                    else:
+                        self.breakCheckBoxes[x].show()
+                        self.HOCheckBoxes[x].show()
 
                     self.addLunchBreak(x, seconds[dayOfWeek])
 
@@ -541,7 +548,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 else:
                     self.starttimeTime[x].hide()
                     self.endtimeTime[x].hide()
-                    self.diffTimeLabels[x].hide()
                     self.autoTimes[x].hide()
                     self.diffTimeLabels[x].hide()
                     self.fullTimeLabels[x].hide()
@@ -563,6 +569,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.hoursTotal.setText(
             f"{tH // 3600}:{tH % 3600 // 60:002}/{pTH // 3600}:{pTH % 3600 // 60:002}"
         )
+        self.updateonSitePercentage()
 
     def updateonSitePercentage(self):
         workingDays = 0
@@ -652,7 +659,8 @@ class MainWindow(QtWidgets.QMainWindow):
             lb = self.breakCheckBoxes[x].isChecked()
             ho = self.HOCheckBoxes[x].isChecked()
             timestamps = self.dateButtons[x].timestamps
-            data[f"{x}"] = [s, e, v, lb, ho, timestamps]
+            za = v and self.vacationCheckBoxes[x].isZA
+            data[f"{x}"] = [s, e, v, lb, ho, timestamps, za]
         if not os.path.exists("data"):
             os.mkdir("data")
         with open(rf"data\{data['MonthAndYear']}.json", "w") as fp:
@@ -674,21 +682,28 @@ class MainWindow(QtWidgets.QMainWindow):
                         lb = True
                         ho = True
                         timestamps = [0, 0, [(0, 0)] * 10]
+                        za = False
                     elif len(_data) == 4:
                         s, e, v, lb = _data
                         ho = True
                         timestamps = [0, 0, [(0, 0)] * 10]
+                        za = False
                     elif len(_data) == 5:
                         s, e, v, lb, timestamps = _data
                         ho = True
-                    else:
+                        za = False
+                    elif len(_data) == 6:
                         s, e, v, lb, ho, timestamps = _data
+                        za = False
+                    else:
+                        s, e, v, lb, ho, timestamps, za = _data
                     self.starttimeTime[x].setTime(minutesToTime(s))
                     self.endtimeTime[x].setTime(minutesToTime(e))
                     self.vacationCheckBoxes[x].setChecked(v)
                     self.breakCheckBoxes[x].setChecked(lb)
                     self.HOCheckBoxes[x].setChecked(ho)
                     self.dateButtons[x].timestamps = timestamps
+                    self.vacationCheckBoxes[x].isZA = za
         else:
             date = self.datetime.date()
             for x in range(date.daysInMonth()):
