@@ -33,6 +33,10 @@ class MainWindow(QtWidgets.QMainWindow):
         topLineLayout.addWidget(self.datetime, 0, 0, 1, 3)
         self.oldDateTime = self.datetime.date()
 
+        self.onSitePercentage = QtWidgets.QLabel("'HO%")
+        self.onSitePercentage.setToolTip("Display the % of office days in the complete month")
+        topLineLayout.addWidget(self.onSitePercentage, 0, 5)
+
         exportButton = QtWidgets.QPushButton("Export")
         exportButton.clicked.connect(self.onExportClicked)
         topLineLayout.addWidget(exportButton, 0, 6)
@@ -132,6 +136,7 @@ class MainWindow(QtWidgets.QMainWindow):
             HOCheckBox.setToolTip(
                 "Green if you worked from home - helps you remember that"
             )
+            HOCheckBox.clicked.connect(self.updateonSitePercentage)
             self.HOCheckBoxes.append(HOCheckBox)
             mainWidgetLayout.addWidget(HOCheckBox, days, 10)
 
@@ -208,6 +213,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.timer.timeout.connect(self.cyclicFunction)
         self.timer.start(1000)
         self.adjustSize()
+        self.updateonSitePercentage()
 
     def cyclicFunction(self):
         self.cyclicCounter = self.cyclicCounter % 60 + 1
@@ -557,6 +563,17 @@ class MainWindow(QtWidgets.QMainWindow):
         self.hoursTotal.setText(
             f"{tH // 3600}:{tH % 3600 // 60:002}/{pTH // 3600}:{pTH % 3600 // 60:002}"
         )
+
+    def updateonSitePercentage(self):
+        workingDays = 0
+        officeDays = 0
+        for HOCheckBox in self.HOCheckBoxes:
+            if not HOCheckBox.isHidden():
+                workingDays += 1
+                if not HOCheckBox.isChecked():
+                    officeDays += 1
+        onSitePercentage = officeDays / workingDays * 100
+        self.onSitePercentage.setText(f"{onSitePercentage:.0f}%")
 
     def detailInputs(self, index: int):
         if (
