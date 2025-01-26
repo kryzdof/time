@@ -497,9 +497,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 calcNeeded = (
                     seconds[dayOfWeek] and
-                    (not self.vacationCheckBoxes[x].isChecked() or
-                    self.vacationCheckBoxes[x].isChecked() and self.vacationCheckBoxes[x].isZA)
-
+                    (
+                        not self.vacationCheckBoxes[x].isChecked() or
+                        self.vacationCheckBoxes[x].isChecked() and self.vacationCheckBoxes[x].isZA
+                    )
                 )
                 if calcNeeded:
                     self.starttimeTime[x].show()
@@ -692,7 +693,7 @@ class MainWindow(QtWidgets.QMainWindow):
                         ho = True
                         za = False
                     elif len(_data) == 6:
-                        s, e, v, lb, ho, timestamps= _data
+                        s, e, v, lb, ho, timestamps = _data
                         za = False
                     else:
                         s, e, v, lb, ho, timestamps, za = _data
