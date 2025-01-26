@@ -572,8 +572,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 workingDays += 1
                 if not HOCheckBox.isChecked():
                     officeDays += 1
-        onSitePercentage = officeDays / workingDays * 100
-        self.onSitePercentage.setText(f"{onSitePercentage:.0f}%")
+        if workingDays:
+            onSitePercentage = officeDays / workingDays * 100
+            self.onSitePercentage.setText(f"{onSitePercentage:.0f}%")
 
     def detailInputs(self, index: int):
         if (
