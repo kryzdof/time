@@ -441,6 +441,16 @@ class MainWindow(QtWidgets.QMainWindow):
         )
         if dlg.exec():
             pushButton.timestamps = dlg.getDetails()
+            if self.config["dailyOfficePercentageAutoCalc"] and (pushButton.timestamps[0] or pushButton.timestamps[1]):
+                totalTime = pushButton.timestamps[1] - pushButton.timestamps[0]
+                officeTime = totalTime
+                for start, end, state in pushButton.timestamps[2]:
+                    if state == 0:
+                        officeTime -= end - start
+                print(officeTime / totalTime * 100, self.config["dailyOfficePercentage"])
+                self.HOCheckBoxes[self.dateButtons.index(pushButton)].setChecked(
+                    officeTime / totalTime * 100 <= self.config["dailyOfficePercentage"]
+                )
             self.updateDateLabels()
 
     def colorDates(self, day=None):
