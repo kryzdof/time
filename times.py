@@ -582,6 +582,10 @@ class MainWindow(QtWidgets.QMainWindow):
         if workingDays:
             onSitePercentage = officeDays / workingDays * 100
             self.onSitePercentage.setText(f"{onSitePercentage:.0f}%")
+            if onSitePercentage < self.config["officePercentage"]:
+                self.onSitePercentage.setStyleSheet("color: red")
+            else:
+                self.onSitePercentage.setStyleSheet("")
 
     def detailInputs(self, index: int):
         if (
