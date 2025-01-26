@@ -263,9 +263,19 @@ class SettingsDialog(QtWidgets.QDialog):
         self.minimize.setToolTip(_minimizeText)
         self.minimize.setWhatsThis(_minimizeText)
 
+        label = QtWidgets.QLabel("Office % threshold")
+        self.officePercentage = QtWidgets.QSpinBox(self)
+        self.officePercentage.setRange(0, 100)
+        self.officePercentage.setValue(self.config["officePercentage"])
+        _officePercentageText = "The office percentage will turn red if below this value"
+        self.officePercentage.setToolTip(_officePercentageText)
+        self.officePercentage.setWhatsThis(_officePercentageText)
+
         generalSettingsLayout.addWidget(self.autoCalcEndTime, 0, 0)
         generalSettingsLayout.addWidget(self.hourWrapAround, 1, 0)
         generalSettingsLayout.addWidget(self.minimize, 2, 0)
+        generalSettingsLayout.addWidget(label, 3, 0)
+        generalSettingsLayout.addWidget(self.officePercentage, 3, 1)
 
         generalSettingsWidgets.setLayout(generalSettingsLayout)
 
@@ -329,6 +339,7 @@ class SettingsDialog(QtWidgets.QDialog):
         cfg["connectHoursAndMinutes"] = self.hourWrapAround.isChecked()
         cfg["forecastEndTimes"] = self.autoCalcEndTime.isChecked()
         cfg["minimize"] = self.minimize.isChecked()
+        cfg["officePercentage"] = self.officePercentage.value()
         cfg["url"] = self.jiraUrlLE.text().rstrip("/")
         if cfg["uid"] != self.uidLE.text():
             if keyring.get_password("jiraconnection", cfg["uid"]):
@@ -391,6 +402,7 @@ class SettingsDialog(QtWidgets.QDialog):
             "connectHoursAndMinutes": config.get("connectHoursAndMinutes", False),
             "forecastEndTimes": config.get("forecastEndTimes", True),
             "minimize": config.get("minimize", True),
+            "officePercentage": config.get("officePercentage", 40),
             "url": config.get("url", "https://jira-ibs.zone2.agileci.conti.de"),
             "uid": config.get("uid", ""),
             "wpLocation": config.get("wpLocation", 2),
