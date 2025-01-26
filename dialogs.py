@@ -32,6 +32,29 @@ class AdvancedTimeEdit(QtWidgets.QTimeEdit):
             super().stepBy(steps)
 
 
+class VacationButton(QtWidgets.QPushButton):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.customContextMenuRequested.connect(self.showContextMenu)
+        self.setCheckable(True)
+        self.setIcon(QtGui.QPixmap(resource_path("black-plane.png")))
+        self.isZA = False
+
+    def showContextMenu(self, pos):
+        contextMenu = QtWidgets.QMenu(self)
+        takeZA = contextMenu.addAction("Take ZA")
+        takeZA.setCheckable(True)
+        takeZA.setChecked(self.isZA)
+
+        action = contextMenu.exec_(self.mapToGlobal(pos))
+        if action == takeZA:
+            self.isZA = not self.isZA
+            self.setChecked(self.isZA)
+            print("Action 1 selected")
+            self.clicked.emit()
+
+
 class AdvancedSpinBox(QtWidgets.QSpinBox):
     wrapped = QtCore.Signal(int)
 
