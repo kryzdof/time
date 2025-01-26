@@ -5,5 +5,8 @@ Play: Icon by <a href="https://freeicons.io/profile/3">icon king1</a> on <a href
 Pause: Icon by <a href="https://freeicons.io/profile/3">icon king1</a> on <a href="https://freeicons.io">freeicons.io</a>
 lunch: Icon by <a href="https://freeicons.io/profile/3">icon king1</a> on <a href="https://freeicons.io">freeicons.io</a>
 house: Icon by <a href="https://freeicons.io/profile/823">Muhammad Haq</a> on <a href="https://freeicons.io">freeicons.io</a>
+doctor: Icon by <a href="https://freeicons.io/medical-icons-2/doctor-health-medical-icon-40950">Muhammad Haq</a> on <a href="https://freeicons.io">freeicons.io</a>
+poison: Icon by <a class="link_pro" href="https://freeicons.io/role-playing-game-icon-set-4/healthabnormal-poison-death-sick-icon-523824">Sorasak Pinwiset</a> on <a href="https://freeicons.io">freeicons.io</a>
+office: Icon by <a class="link_pro" href="https://freeicons.io/essential-web-4/city-building-urban-office-business-icon-40411">BECRIS</a> on <a href="https://freeicons.io">freeicons.io</a>
 
 Time: Downloaded from https://www.iconninja.com/time-clock-alarm-icon-40658

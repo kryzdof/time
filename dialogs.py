@@ -55,6 +55,39 @@ class VacationButton(QtWidgets.QPushButton):
             self.clicked.emit()
 
 
+class TimeTypeButton(QtWidgets.QPushButton):
+    stateNames = ["Home Office", "Office", "Doctor Appointment", "Sick Leave"]
+    stateIcons = ["house.png", "office.png", "doctor.png", "poison.png"]
+
+    def __init__(self, stateType=0, parent=None):
+        super().__init__(parent)
+        self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.customContextMenuRequested.connect(self.showContextMenu)
+        self.state = stateType
+        self.setIcon(QtGui.QPixmap(resource_path(self.stateIcons[self.state])))
+        self.clicked.connect(self.nextState)
+
+    def nextState(self):
+        self.state = (self.state + 1) % len(self.stateIcons)
+        self.setIcon(QtGui.QPixmap(resource_path(self.stateIcons[self.state])))
+
+    def setState(self, state):
+        self.state = state
+        self.setIcon(QtGui.QPixmap(resource_path(self.stateIcons[self.state])))
+
+    def showContextMenu(self, pos):
+        contextMenu = QtWidgets.QMenu(self)
+        actions = []
+        for index, state in enumerate(self.stateNames):
+            actions.append(contextMenu.addAction(QtGui.QPixmap(resource_path(self.stateIcons[index])), state))
+
+        action = contextMenu.exec_(self.mapToGlobal(pos))
+        for act in actions:
+            if action == act:
+                self.state = actions.index(act)
+                self.setIcon(QtGui.QPixmap(resource_path(self.stateIcons[self.state])))
+
+
 class AdvancedSpinBox(QtWidgets.QSpinBox):
     wrapped = QtCore.Signal(int)
 
@@ -84,6 +117,7 @@ class DetailTimesDialog(QtWidgets.QDialog):
         self.startTimes = []
         self.endTimes = []
         self.timeDuration = []
+        self.timeTypes = []
 
         label = QtWidgets.QLabel("Start Times")
         label.setAlignment(QtCore.Qt.AlignHCenter)
@@ -94,23 +128,31 @@ class DetailTimesDialog(QtWidgets.QDialog):
         label = QtWidgets.QLabel("Diff Times")
         label.setAlignment(QtCore.Qt.AlignHCenter)
         mainLayout.addWidget(label, 0, 4)
+        label = QtWidgets.QLabel("Time Type")
+        label.setAlignment(QtCore.Qt.AlignHCenter)
+        mainLayout.addWidget(label, 0, 5)
 
         for x, timestamps in zip_longest(
-            range(10), self.timeStampData, fillvalue=(0, 0)
+            range(10), self.timeStampData, fillvalue=(0, 0, 0)
         ):
+            if len(timestamps) == 2:
+                start, end, timeType = *timestamps, 0
+            else:
+                start, end, timeType = timestamps
+
             autoTime = QtWidgets.QPushButton(
                 QtGui.QPixmap(resource_path("time.png")), ""
             )
             autoTime.clicked.connect(self.updateAutoTime)
             mainLayout.addWidget(autoTime, x + 1, 0)
-            t = QtCore.QTime(minutesToTime(timestamps[0]))
+            t = QtCore.QTime(minutesToTime(start))
             startTimes = AdvancedTimeEdit(t)
             startTimes.timeChanged.connect(self.updateDiffs)
             self.startTimes.append(startTimes)
             mainLayout.addWidget(startTimes, x + 1, 1)
             autoTime.QTimeReference = startTimes
 
-            t = QtCore.QTime(minutesToTime(timestamps[1]))
+            t = QtCore.QTime(minutesToTime(end))
             endTimes = AdvancedTimeEdit(t)
             endTimes.timeChanged.connect(self.updateDiffs)
             self.endTimes.append(endTimes)
@@ -126,6 +168,10 @@ class DetailTimesDialog(QtWidgets.QDialog):
             self.timeDuration.append(label)
             mainLayout.addWidget(label, x + 1, 4)
 
+            timeTypes = TimeTypeButton(timeType)
+            self.timeTypes.append(timeTypes)
+            mainLayout.addWidget(timeTypes, x + 1, 5)
+
         label = QtWidgets.QLabel("Total time:")
         mainLayout.addWidget(label, 11, 1)
 
@@ -136,11 +182,15 @@ class DetailTimesDialog(QtWidgets.QDialog):
             QtWidgets.QDialogButtonBox.Ok
             | QtWidgets.QDialogButtonBox.Cancel
             | QtWidgets.QDialogButtonBox.Reset
+            | QtWidgets.QDialogButtonBox.Discard
         )
         buttonbox.accepted.connect(self.accept)
         buttonbox.rejected.connect(self.reject)
         buttonbox.button(QtWidgets.QDialogButtonBox.Reset).clicked.connect(
             self.resetTimes
+        )
+        buttonbox.button(QtWidgets.QDialogButtonBox.Discard).clicked.connect(
+            self.discardTimes
         )
 
         mainLayout.addWidget(buttonbox, 20, 0, 1, 5)
@@ -171,12 +221,26 @@ class DetailTimesDialog(QtWidgets.QDialog):
 
     def resetTimes(self):
         for x, timestamps in zip_longest(
-            range(10), self.timeStampData, fillvalue=(0, 0)
+            range(10), self.timeStampData, fillvalue=(0, 0, 0)
         ):
+            if len(timestamps) == 2:
+                start, end, timeType = *timestamps, 0
+            else:
+                start, end, timeType = timestamps
             t = QtCore.QTime(minutesToTime(timestamps[0]))
             self.startTimes[x].setTime(t)
             t = QtCore.QTime(minutesToTime(timestamps[1]))
             self.endTimes[x].setTime(t)
+            self.timeTypes[x].setState(timeType)
+        self.updateDiffs()
+
+    def discardTimes(self):
+        for x in range(10):
+            t = QtCore.QTime(minutesToTime(0))
+            self.startTimes[x].setTime(t)
+            t = QtCore.QTime(minutesToTime(0))
+            self.endTimes[x].setTime(t)
+            self.timeTypes[x].setState(0)
         self.updateDiffs()
 
     def accept(self):
@@ -195,6 +259,7 @@ class DetailTimesDialog(QtWidgets.QDialog):
                 (
                     timeToMinutes(self.startTimes[x].time()),
                     timeToMinutes(self.endTimes[x].time()),
+                    self.timeTypes[x].state,
                 )
             )
         return timeToMinutes(totalStart), timeToMinutes(totalEnd), timeStamps
@@ -263,21 +328,53 @@ class SettingsDialog(QtWidgets.QDialog):
         self.minimize.setToolTip(_minimizeText)
         self.minimize.setWhatsThis(_minimizeText)
 
-        label = QtWidgets.QLabel("Office % threshold")
+        generalSettingsLayout.addWidget(self.autoCalcEndTime, 0, 0)
+        generalSettingsLayout.addWidget(self.hourWrapAround, 1, 0)
+        generalSettingsLayout.addWidget(self.minimize, 2, 0)
+
+        generalSettingsWidgets.setLayout(generalSettingsLayout)
+
+        homeOfficeSettingsLayout = QtWidgets.QGridLayout()
+        homeOfficeSettingsWidgets = QtWidgets.QGroupBox("Home Office Settings")
+
+        MonthlyLabel = QtWidgets.QLabel("Monthly office % threshold")
         self.officePercentage = QtWidgets.QSpinBox(self)
         self.officePercentage.setRange(0, 100)
         self.officePercentage.setValue(self.config["officePercentage"])
         _officePercentageText = "The office percentage will turn red if below this value"
         self.officePercentage.setToolTip(_officePercentageText)
         self.officePercentage.setWhatsThis(_officePercentageText)
+        MonthlyLabel.setToolTip(_officePercentageText)
+        MonthlyLabel.setWhatsThis(_officePercentageText)
 
-        generalSettingsLayout.addWidget(self.autoCalcEndTime, 0, 0)
-        generalSettingsLayout.addWidget(self.hourWrapAround, 1, 0)
-        generalSettingsLayout.addWidget(self.minimize, 2, 0)
-        generalSettingsLayout.addWidget(label, 3, 0)
-        generalSettingsLayout.addWidget(self.officePercentage, 3, 1)
+        DailyLabel = QtWidgets.QLabel("Daily office % threshold")
+        self.dailyOfficePercentageCheckBox = QtWidgets.QCheckBox()
+        self.dailyOfficePercentageCheckBox.setChecked(self.config["dailyOfficePercentageAutoCalc"])
+        self.dailyOfficePercentage = QtWidgets.QSpinBox(self)
+        self.dailyOfficePercentage.setRange(0, 100)
+        self.dailyOfficePercentage.setValue(self.config["dailyOfficePercentage"])
+        self.dailyOfficePercentage.setDisabled(not self.config["dailyOfficePercentageAutoCalc"])
+        self.dailyOfficePercentageCheckBox.toggled.connect(self.dailyOfficePercentageSetDisabled)
 
-        generalSettingsWidgets.setLayout(generalSettingsLayout)
+        _dailyOfficePercentageText = ("Office percentage on a daily basis.\n"
+                                      "If enabled the daily time details are triggering an update on save.\n"
+                                      "If the percentage of office time on that day is higher, "
+                                      "the threshold it is considered an office day.\n"
+                                      "Any non-home-office time is considered office.\n")
+        self.dailyOfficePercentage.setToolTip(_dailyOfficePercentageText)
+        self.dailyOfficePercentage.setWhatsThis(_dailyOfficePercentageText)
+        self.dailyOfficePercentageCheckBox.setWhatsThis(_dailyOfficePercentageText)
+        self.dailyOfficePercentageCheckBox.setWhatsThis(_dailyOfficePercentageText)
+        DailyLabel.setToolTip(_dailyOfficePercentageText)
+        DailyLabel.setWhatsThis(_dailyOfficePercentageText)
+
+        homeOfficeSettingsLayout.addWidget(MonthlyLabel, 0, 0)
+        homeOfficeSettingsLayout.addWidget(self.officePercentage, 0, 2)
+        homeOfficeSettingsLayout.addWidget(DailyLabel, 1, 0)
+        homeOfficeSettingsLayout.addWidget(self.dailyOfficePercentageCheckBox, 1, 1)
+        homeOfficeSettingsLayout.addWidget(self.dailyOfficePercentage, 1, 2)
+
+        homeOfficeSettingsWidgets.setLayout(homeOfficeSettingsLayout)
 
         JiraSettingsLayout = QtWidgets.QGridLayout()
         JiraSettingsWidgets = QtWidgets.QGroupBox("Jira Settings")
@@ -325,10 +422,14 @@ class SettingsDialog(QtWidgets.QDialog):
         mainLayout.addWidget(timeSettingsWidgets, 0, 0, 2, 1)
         mainLayout.addWidget(lunchSettingsWidgets, 0, 1)
         mainLayout.addWidget(generalSettingsWidgets, 1, 1)
-        mainLayout.addWidget(workPackageLocationWidgets, 2, 0, 1, 2)
-        mainLayout.addWidget(JiraSettingsWidgets, 3, 0, 1, 2)
+        mainLayout.addWidget(homeOfficeSettingsWidgets, 2, 0, 1, 2)
+        mainLayout.addWidget(workPackageLocationWidgets, 3, 0, 1, 2)
+        mainLayout.addWidget(JiraSettingsWidgets, 4, 0, 1, 2)
         mainLayout.addWidget(buttonbox)
         self.setLayout(mainLayout)
+
+    def dailyOfficePercentageSetDisabled(self, checked):
+        self.dailyOfficePercentage.setDisabled(not checked)
 
     def accept(self):
         cfg = self.getConfig()
@@ -340,6 +441,8 @@ class SettingsDialog(QtWidgets.QDialog):
         cfg["forecastEndTimes"] = self.autoCalcEndTime.isChecked()
         cfg["minimize"] = self.minimize.isChecked()
         cfg["officePercentage"] = self.officePercentage.value()
+        cfg["dailyOfficePercentageAutoCalc"] = self.dailyOfficePercentageCheckBox.isChecked()
+        cfg["dailyOfficePercentage"] = self.dailyOfficePercentage.value()
         cfg["url"] = self.jiraUrlLE.text().rstrip("/")
         if cfg["uid"] != self.uidLE.text():
             if keyring.get_password("jiraconnection", cfg["uid"]):
@@ -403,6 +506,8 @@ class SettingsDialog(QtWidgets.QDialog):
             "forecastEndTimes": config.get("forecastEndTimes", True),
             "minimize": config.get("minimize", True),
             "officePercentage": config.get("officePercentage", 40),
+            "dailyOfficePercentageAutoCalc": config.get("dailyOfficePercentageAutoCalc", True),
+            "dailyOfficePercentage": config.get("dailyOfficePercentage", 0),
             "url": config.get("url", "https://jira-ibs.zone2.agileci.conti.de"),
             "uid": config.get("uid", ""),
             "wpLocation": config.get("wpLocation", 2),
