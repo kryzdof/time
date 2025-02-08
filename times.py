@@ -15,13 +15,15 @@ from PySide6 import QtCore, QtWidgets, QtGui
 import dialogs
 from utils import resource_path, minutesToTime, timeToMinutes, JiraWriteLog
 
+version = "replace me for real version"
+
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, parent=None, app=None):
         super(MainWindow, self).__init__(parent)
 
         self.setObjectName("Times")
-        self.setWindowTitle("Times 1.2.1")
+        self.setWindowTitle(f"Times {version}")
         self.setMinimumWidth(500)
 
         topLine = QtWidgets.QGroupBox()
