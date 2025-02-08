@@ -22,6 +22,10 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
+    - name: update version
+      run: |
+        sed -i "s/__version__ = '.*'/__version__ = '$GITHUB_REF_NAME'/" times.py
+
     - name: Build with PyInstaller
       run: pyinstaller times.spec -y
 
