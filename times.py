@@ -1,5 +1,4 @@
 import calendar
-import csv
 import json
 import os
 import shutil
@@ -38,10 +37,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.onSitePercentage = QtWidgets.QLabel("'HO%")
         self.onSitePercentage.setToolTip("Display the % of office days in the complete month")
         topLineLayout.addWidget(self.onSitePercentage, 0, 5)
-
-        exportButton = QtWidgets.QPushButton("Export")
-        exportButton.clicked.connect(self.onExportClicked)
-        topLineLayout.addWidget(exportButton, 0, 6)
 
         self.hoursZA = QtWidgets.QLabel("ZA")
         self.hoursTotal = QtWidgets.QLabel("Total")
@@ -355,58 +350,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def openWorkPackageView(self):
         self.workPackageView.setVisible(self.workpackagesButton.isChecked())
-
-    def onExportClicked(self):
-        self.saveMonth()
-        file = rf"data\{self.datetime.date().toString('MMMM yyyy')}.json"
-        csvFile = rf"{os.environ['USERPROFILE']}\Desktop\timesExport.csv"
-        if os.path.exists(file):
-            with open(file, "r") as fp:
-                data = json.load(fp)
-                date = self.datetime.date()
-                with open(csvFile, "w", newline='') as out:
-                    writer = csv.writer(out)
-                    for x in range(date.daysInMonth()):
-                        # backwards compatibility:
-                        _data = data[f"{x}"]
-                        if len(_data) == 3:
-                            s, e, v = _data
-                            lb = True
-                            ho = True
-                            timestamps = [0, 0, [(0, 0)] * 10]
-                        elif len(_data) == 4:
-                            s, e, v, lb = _data
-                            ho = True
-                            timestamps = [0, 0, [(0, 0)] * 10]
-                        elif len(_data) == 5:
-                            s, e, v, lb, timestamps = _data
-                            ho = True
-                        else:
-                            s, e, v, lb, ho, timestamps = _data
-                        if timestamps[0] != 0:
-                            # special handling for timestamps
-                            for s, e in timestamps[2]:
-                                if s != 0:
-                                    start = minutesToTime(s)
-                                    end = minutesToTime(e)
-                                    code = 103 if ho else 0
-                                    writer.writerow([
-                                        f"{x + 1}.{self.datetime.date().toString('MM.yyyy')}",
-                                        f"{start.hour():02}:{start.minute():02}",
-                                        f"{end.hour():02}:{end.minute():02}",
-                                        code
-                                        ])
-                        elif s != 0:
-                            start = minutesToTime(s)
-                            end = minutesToTime(e)
-                            code = 103 if ho else 0
-                            writer.writerow([
-                                f"{x + 1}.{self.datetime.date().toString('MM.yyyy')}",
-                                f"{start.hour():02}:{start.minute():02}",
-                                f"{end.hour():02}:{end.minute():02}",
-                                code
-                                ])
-        os.system(f"start {os.path.dirname(csvFile)}")
 
     def onSettingsClicked(self):
         if self.settings.exec():
