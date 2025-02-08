@@ -26,3 +26,7 @@ jobs:
     - name: print iss file
       run: |
         cat times.iss
+
+    - name: print times.py
+      run: |
+        cat times.py
