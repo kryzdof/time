@@ -24,7 +24,8 @@ jobs:
 
     - name: update version
       run: |
-        sed -i "s/__version__ = '.*'/__version__ = '$GITHUB_REF_NAME'/" times.py
+        sed -i "s/version = \"replace me for real version\"/version = \"$GITHUB_REF_NAME\"/" times.py
+        sed -i "s/MyAppVersion \"replace me for real version\"/MyAppVersion \"$GITHUB_REF_NAME\"/" times.iss
 
     - name: Build with PyInstaller
       run: pyinstaller times.spec -y

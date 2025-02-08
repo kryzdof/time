@@ -18,9 +18,9 @@ DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 ; Remove the following line to run in administrative install mode (install for all users.)
 PrivilegesRequired=lowest
-OutputDir=D:\GIT\time\release
+OutputDir=release
 OutputBaseFilename=times
-SetupIconFile=\pics\time.ico
+SetupIconFile=pics\time.ico
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
@@ -32,8 +32,8 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 
 [Files]
-Source: "D:\GIT\time\dist\times\{#MyAppExeName}"; DestDir: "{app}\times\"; Flags: ignoreversion
-Source: "D:\GIT\time\dist\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "dist\times\{#MyAppExeName}"; DestDir: "{app}\times\"; Flags: ignoreversion
+Source: "dist\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
