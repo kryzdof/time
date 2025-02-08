@@ -178,7 +178,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.config = self.settings.getConfig()
         self.workPackages = self.loadWorkPackages()
         self.workPackageView = WorkPackageView(self)
-        self.workPackageView.hide()
         self.workpackagesButton.setChecked(self.config["wpActive"])
 
         self.hSplitter = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
@@ -187,8 +186,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if wpl < 2:
             self.hSplitter.insertWidget(wpl, self.workPackageView)
 
-        if self.config["wpActive"]:
-            self.workPackageView.show()
+        self.workPackageView.setVisible(self.config["wpActive"])
 
         self.setCentralWidget(self.hSplitter)
 
