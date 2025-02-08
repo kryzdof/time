@@ -2,8 +2,7 @@ name: Build and Package on Tag
 
 on:
   push:
-    tags:
-      - '*'
+    branches: [ "automated-releases" ]
 
 jobs:
   build:
