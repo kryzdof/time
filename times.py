@@ -20,8 +20,8 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, parent=None, app=None):
         super(MainWindow, self).__init__(parent)
 
-        self.setObjectName("UltraTime")
-        self.setWindowTitle("UltraTime")
+        self.setObjectName("Times")
+        self.setWindowTitle("Times 1.2.1")
         self.setMinimumWidth(500)
 
         topLine = QtWidgets.QGroupBox()
