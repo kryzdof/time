@@ -18,15 +18,15 @@ jobs:
       with:
         python-version: '3.11'
 
+    - name: update version
+      run: |
+        sed -i 's/version = "replace me for real version"/version = "${{ github.ref_name }}"/' times.py
+        sed -i 's/MyAppVersion "replace me for real version"/MyAppVersion "${{ github.ref_name }}"/' times.iss
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-
-    - name: update version
-      run: |
-        sed -i 's/version = \"replace me for real version\"/version = \"$GITHUB_REF_NAME\"/' times.py
-        sed -i 's/MyAppVersion \"replace me for real version\"/MyAppVersion \"$GITHUB_REF_NAME\"/' times.iss
 
     - name: Build with PyInstaller
       run: pyinstaller times.spec -y
