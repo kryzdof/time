@@ -26,4 +26,7 @@ jobs:
       run: pyinstaller times.spec -y
 
     - name: Package with Inno Setup
-      run: "C:\\Program Files (x86)\\Inno Setup 6\\iscc.exe times.iss"
+      uses: Minionguyjpro/Inno-Setup-Action@v1.2.5
+      with:
+        path: times.iss
+        options: /O+
