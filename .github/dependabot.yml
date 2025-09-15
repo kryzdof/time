@@ -9,6 +9,9 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "weekly"
+    ignore:
+      - dependency-name: "pefile"
+        versions: ["2024.8.26"] 
     open-pull-requests-limit: 15
     groups:
       python:
