@@ -27,7 +27,7 @@ psutil==7.1.0
 pycodestyle==2.14.0
 pyflakes==3.4.0
 pyinstaller==6.16.0
-pyinstaller-hooks-contrib==2025.8
+pyinstaller-hooks-contrib==2025.9
 pyparsing==3.2.5
 PySide6==6.9.2
 PySide6_Addons==6.9.2
