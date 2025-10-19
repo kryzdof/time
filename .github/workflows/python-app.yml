@@ -38,3 +38,12 @@ jobs:
       run: |
         # call pyinstaller 
         pyinstaller times.spec
+    - name: zip output
+      run:
+        python -c "import shutil; shutil.make_archive('distFolder', 'zip', 'dist/times')"
+    - name: archive zipfile
+      uses: actions/upload-artifact@v4
+      with:
+        name: distFolder
+        path: distFolder.zip
+        retention-days: 3
