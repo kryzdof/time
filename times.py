@@ -115,7 +115,6 @@ class MainWindow(QtWidgets.QMainWindow):
             breakCheckBox = QtWidgets.QPushButton()
             breakCheckBox.clicked.connect(self.updateDateLabels)
             breakCheckBox.setCheckable(True)
-            # breakCheckBox.setStyleSheet("QPushButton:checked {background-color: LightGreen;}")
             breakCheckBox.setIcon(QtGui.QPixmap(resource_path("lunch.png")))
             breakCheckBox.setToolTip(
                 "Green if you had lunch - will reduce the worked time on this day by the configured normal lunch break"
@@ -126,7 +125,6 @@ class MainWindow(QtWidgets.QMainWindow):
             HOCheckBox = QtWidgets.QPushButton()
             HOCheckBox.setCheckable(True)
             HOCheckBox.setChecked(True)
-            # HOCheckBox.setStyleSheet("QPushButton:checked {background-color: LightGreen;}")
             HOCheckBox.setIcon(QtGui.QPixmap(resource_path("house.png")))
             HOCheckBox.setToolTip(
                 "Green if you worked from home - helps you remember that"
@@ -807,7 +805,7 @@ class WorkPackageWidget(QtWidgets.QWidget):
         if self.isActive():
             self.startStopButton.setChecked(True)
             self.startStopButton.setIcon(QtGui.QPixmap(resource_path("pause.png")))
-            self.setStyleSheet("background: LightGreen")
+            self.setStyleSheet("background: LightGreen; color: #000000")
             self.setAutoFillBackground(True)
         else:
             self.startStopButton.setChecked(False)
