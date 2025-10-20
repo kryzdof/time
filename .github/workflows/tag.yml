@@ -30,7 +30,7 @@ jobs:
       run: uv sync --locked --no-dev
 
     - name: Build with PyInstaller
-      run: pyinstaller times.spec -y
+      run: uv run pyinstaller times.spec -y
 
     - name: Package with Inno Setup
       uses: Minionguyjpro/Inno-Setup-Action@v1.2.5
