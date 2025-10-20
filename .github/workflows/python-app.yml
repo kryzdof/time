@@ -43,7 +43,7 @@ jobs:
     - name: build exe
       run: |
         # call pyinstaller 
-        pyinstaller times.spec
+        uv run pyinstaller times.spec
 
     - name: zip output
       run:
