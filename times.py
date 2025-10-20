@@ -836,7 +836,8 @@ class WorkPackageWidget(QtWidgets.QWidget):
             ret = QtWidgets.QMessageBox.warning(
                 self,
                 "Delete workpackage",
-                "The workpackage will be deleted together with all the logged time. Are you sure you want to delete it?",
+                "The workpackage will be deleted together with all the logged time. " +
+                "Are you sure you want to delete it?",
                 QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
             )
         else:
