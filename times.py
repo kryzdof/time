@@ -810,6 +810,7 @@ class WorkPackageWidget(QtWidgets.QWidget):
         else:
             self.startStopButton.setChecked(False)
             self.startStopButton.setIcon(QtGui.QPixmap(resource_path("play.png")))
+            self.setStyleSheet("background: None")
             self.setStyleSheet("")
 
     def openUrl(self):
