@@ -360,7 +360,7 @@ class SettingsDialog(QtWidgets.QDialog):
                                       "If enabled the daily time details are triggering an update on save.\n"
                                       "If the percentage of office time on that day is higher, "
                                       "the threshold it is considered an office day.\n"
-                                      "Any non-home-office time is considered office.\n")
+                                      "Any non-home-office time is considered office.")
         self.dailyOfficePercentage.setToolTip(_dailyOfficePercentageText)
         self.dailyOfficePercentage.setWhatsThis(_dailyOfficePercentageText)
         self.dailyOfficePercentageCheckBox.setWhatsThis(_dailyOfficePercentageText)

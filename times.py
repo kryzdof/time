@@ -115,7 +115,6 @@ class MainWindow(QtWidgets.QMainWindow):
             breakCheckBox = QtWidgets.QPushButton()
             breakCheckBox.clicked.connect(self.updateDateLabels)
             breakCheckBox.setCheckable(True)
-            # breakCheckBox.setStyleSheet("QPushButton:checked {background-color: LightGreen;}")
             breakCheckBox.setIcon(QtGui.QPixmap(resource_path("lunch.png")))
             breakCheckBox.setToolTip(
                 "Green if you had lunch - will reduce the worked time on this day by the configured normal lunch break"
@@ -126,7 +125,6 @@ class MainWindow(QtWidgets.QMainWindow):
             HOCheckBox = QtWidgets.QPushButton()
             HOCheckBox.setCheckable(True)
             HOCheckBox.setChecked(True)
-            # HOCheckBox.setStyleSheet("QPushButton:checked {background-color: LightGreen;}")
             HOCheckBox.setIcon(QtGui.QPixmap(resource_path("house.png")))
             HOCheckBox.setToolTip(
                 "Green if you worked from home - helps you remember that"
@@ -191,7 +189,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.app:
             self.app.setQuitOnLastWindowClosed(not self.config["minimize"])
             self.menu = None
-            self.actions = None
+            self.trayActions = dict()
             self.trayIcon = None
             self.createTray()
 
@@ -233,12 +231,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def createTrayMenu(self):
         self.menu = QtWidgets.QMenu()
-        self.actions = dict()
 
         action_newWP = QtGui.QAction("New Work Package")
         action_newWP.triggered.connect(self.newWorkPackage)
         self.menu.addAction(action_newWP)
-        self.actions["New Work Package"] = action_newWP
+        self.trayActions["New Work Package"] = action_newWP
 
         self.menu.addSeparator()
 
@@ -250,24 +247,24 @@ class MainWindow(QtWidgets.QMainWindow):
         action_startDay = QtGui.QAction("Start Day")
         action_startDay.triggered.connect(self.startDay)
         self.menu.addAction(action_startDay)
-        self.actions["Start Day"] = action_startDay
+        self.trayActions["Start Day"] = action_startDay
 
         action_endDay = QtGui.QAction("End Day")
         action_endDay.triggered.connect(self.endDay)
         self.menu.addAction(action_endDay)
-        self.actions["End Day"] = action_endDay
+        self.trayActions["End Day"] = action_endDay
 
         self.menu.addSeparator()
 
         action_open = QtGui.QAction("Open")
         action_open.triggered.connect(self.restore)
         self.menu.addAction(action_open)
-        self.actions["Open"] = action_open
+        self.trayActions["Open"] = action_open
 
         action_exit = QtGui.QAction("Exit")
         action_exit.triggered.connect(self.app.exit)
         self.menu.addAction(action_exit)
-        self.actions["Exit"] = action_exit
+        self.trayActions["Exit"] = action_exit
 
         self.trayIcon.setContextMenu(self.menu)
 
@@ -412,7 +409,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.dateButtons[x].setStyleSheet("color: rgb(100, 100, 100)")
             elif x + 1 == today.day() and month == today.month():
                 self.dateButtons[x].setStyleSheet("color: red")
-                self.actions["Start Day"].setDisabled(
+                self.trayActions["Start Day"].setDisabled(
                     self.starttimeTime[x].time().msecsSinceStartOfDay()
                 )
             else:
@@ -807,11 +804,12 @@ class WorkPackageWidget(QtWidgets.QWidget):
         if self.isActive():
             self.startStopButton.setChecked(True)
             self.startStopButton.setIcon(QtGui.QPixmap(resource_path("pause.png")))
-            self.setStyleSheet("background: LightGreen")
+            self.setStyleSheet("background: LightGreen; color: #000000")
             self.setAutoFillBackground(True)
         else:
             self.startStopButton.setChecked(False)
             self.startStopButton.setIcon(QtGui.QPixmap(resource_path("play.png")))
+            self.setStyleSheet("background: None")
             self.setStyleSheet("")
 
     def openUrl(self):
