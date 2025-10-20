@@ -1,0 +1,21 @@
+[project]
+name = "time"
+version = "1.2.1"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "jira>=3.10.5",
+    "keyring>=25.6.0",
+    "psutil>=7.1.1",
+    "pyinstaller>=6.16.0",
+    "pyside6>=6.10.0",
+    "pywin32>=311",
+]
+
+[dependency-groups]
+dev = [
+    "flake8>=7.3.0",
+    "pytest>=8.4.2",
+    "pytest-qt>=4.5.0",
+]
