@@ -5,7 +5,7 @@ name: Build Executable
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "test" ]
   pull_request:
     branches: [ "master" ]
 
