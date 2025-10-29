@@ -628,7 +628,7 @@ dev = [
 requires-dist = [
     { name = "jira", specifier = ">=3.10.5" },
     { name = "keyring", specifier = ">=25.6.0" },
-    { name = "psutil", specifier = ">=7.1.0" },
+    { name = "psutil", specifier = ">=7.1.2" },
     { name = "pyinstaller", specifier = ">=6.16.0" },
     { name = "pyside6", specifier = ">=6.10.0" },
     { name = "pywin32", specifier = ">=311" },
