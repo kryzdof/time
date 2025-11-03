@@ -450,7 +450,9 @@ class SettingsDialog(QtWidgets.QDialog):
             except Exception as e:
                 QtWidgets.QMessageBox.warning(self, "Jira Connection Error", str(e), QtWidgets.QMessageBox.Ok)
         else:
-                QtWidgets.QMessageBox.warning(self, "No Credentials", "Please provide User ID and Password", QtWidgets.QMessageBox.Ok)
+            QtWidgets.QMessageBox.warning(
+                self, "No Credentials", "Please provide User ID and Password", QtWidgets.QMessageBox.Ok
+            )
 
     @staticmethod
     def saveConfig(cfg):
