@@ -46,9 +46,7 @@ def JiraWriteLog(cfg, ticket, duration):
     try:
         jira = getJiraInstance(cfg["url"], cfg["uid"])
     except Exception as e:
-        QtWidgets.QMessageBox.critical(
-            None, "Jira Connection Error", str(e), QtWidgets.QMessageBox.Ok
-        )
+        QtWidgets.QMessageBox.critical(None, "Jira Connection Error", str(e), QtWidgets.QMessageBox.Ok)
         return False
     try:
         jira.add_worklog(ticket, timeSpentSeconds=duration)
@@ -69,9 +67,7 @@ def JiraWriteLog(cfg, ticket, duration):
             )
         return False
     except Exception as e:
-        QtWidgets.QMessageBox.critical(
-            None, "Work Log Creation Error", str(e), QtWidgets.QMessageBox.Ok
-        )
+        QtWidgets.QMessageBox.critical(None, "Work Log Creation Error", str(e), QtWidgets.QMessageBox.Ok)
         return False
     return True
 

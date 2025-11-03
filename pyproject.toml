@@ -20,3 +20,6 @@ dev = [
     "pytest-qt==4.5.0",
     "ruff==0.14.3",
 ]
+
+[tool.ruff]
+line-length = 120

@@ -87,9 +87,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.endtimeTime.append(endtime)
             mainWidgetLayout.addWidget(endtime, days, 4)
 
-            autoTime = QtWidgets.QPushButton(
-                QtGui.QPixmap(resource_path("time.png")), ""
-            )
+            autoTime = QtWidgets.QPushButton(QtGui.QPixmap(resource_path("time.png")), "")
             autoTime.setObjectName(str(days))
             autoTime.setToolTip(
                 "If start time is 00:00, it will set it to the current time\n"
@@ -126,9 +124,7 @@ class MainWindow(QtWidgets.QMainWindow):
             HOCheckBox.setCheckable(True)
             HOCheckBox.setChecked(True)
             HOCheckBox.setIcon(QtGui.QPixmap(resource_path("house.png")))
-            HOCheckBox.setToolTip(
-                "Green if you worked from home - helps you remember that"
-            )
+            HOCheckBox.setToolTip("Green if you worked from home - helps you remember that")
             HOCheckBox.clicked.connect(self.updateonSitePercentage)
             self.HOCheckBoxes.append(HOCheckBox)
             mainWidgetLayout.addWidget(HOCheckBox, days, 10)
@@ -140,14 +136,10 @@ class MainWindow(QtWidgets.QMainWindow):
         scrollArea = QtWidgets.QScrollArea()
         scrollArea.setWidget(mainWidget)
         scrollArea.setWidgetResizable(True)
-        scrollArea.setHorizontalScrollBarPolicy(
-            QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff
-        )
+        scrollArea.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scrollArea.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
         scrollArea.setSizeAdjustPolicy(QtWidgets.QAbstractScrollArea.AdjustToContents)
-        scrollArea.ensureWidgetVisible(
-            self.dateButtons[self.datetime.date().day() - 1], 200, 200
-        )
+        scrollArea.ensureWidgetVisible(self.dateButtons[self.datetime.date().day() - 1], 200, 200)
 
         for x in range(30):
             mainWidget.setTabOrder(self.autoTimes[x], self.autoTimes[x + 1])
@@ -158,9 +150,7 @@ class MainWindow(QtWidgets.QMainWindow):
         mainWidget.setTabOrder(self.starttimeTime[-1], self.endtimeTime[-1])
         mainWidget.setTabOrder(self.endtimeTime[-1], self.vacationCheckBoxes[0])
         for x in range(30):
-            mainWidget.setTabOrder(
-                self.vacationCheckBoxes[x], self.vacationCheckBoxes[x + 1]
-            )
+            mainWidget.setTabOrder(self.vacationCheckBoxes[x], self.vacationCheckBoxes[x + 1])
 
         vSplitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
         vSplitter.addWidget(topLine)
@@ -195,9 +185,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.scroll = scrollArea
         self.updateDateLabels()
-        self.resize(
-            QtCore.QSize(mainWidget.sizeHint().width(), self.size().height() + 50)
-        )
+        self.resize(QtCore.QSize(mainWidget.sizeHint().width(), self.size().height() + 50))
 
         self.cyclicCounter = 0
         self.timer = QtCore.QTimer()
@@ -222,9 +210,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     wp.trigger()
 
     def createTray(self):
-        self.trayIcon = QtWidgets.QSystemTrayIcon(
-            QtGui.QIcon(resource_path("time.png")), self.app
-        )
+        self.trayIcon = QtWidgets.QSystemTrayIcon(QtGui.QIcon(resource_path("time.png")), self.app)
         self.trayIcon.show()
         self.trayIcon.activated.connect(self.trayActivated)
         self.createTrayMenu()
@@ -277,9 +263,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def restore(self):
         self.show()  # if closed to tray
         self.activateWindow()  # if in the background
-        self.setWindowState(
-            self.windowState() & ~QtCore.Qt.WindowMinimized | QtCore.Qt.WindowActive
-        )  # if minimized
+        self.setWindowState(self.windowState() & ~QtCore.Qt.WindowMinimized | QtCore.Qt.WindowActive)  # if minimized
 
     def startDay(self):
         self.datetime.setDate(QtCore.QDate.currentDate())
@@ -306,9 +290,7 @@ class MainWindow(QtWidgets.QMainWindow):
             with open(file, "r") as fp:
                 jsonWP = json.load(fp)
                 for wpJson in jsonWP:
-                    wp = WorkPackage(
-                        wpJson["name"], wpJson["ticket"], wpJson["loggedTime"]
-                    )
+                    wp = WorkPackage(wpJson["name"], wpJson["ticket"], wpJson["loggedTime"])
                     wp.triggered.connect(self.stopAllTracking)
                     workPackages.append(wp)
             return workPackages
@@ -376,9 +358,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def openDetailTimesDialog(self):
         pushButton = self.sender()
-        dlg = dialogs.DetailTimesDialog(
-            self, pushButton.text(), pushButton.timestamps[2]
-        )
+        dlg = dialogs.DetailTimesDialog(self, pushButton.text(), pushButton.timestamps[2])
         if dlg.exec():
             pushButton.timestamps = dlg.getDetails()
             if self.config["dailyOfficePercentageAutoCalc"] and (pushButton.timestamps[0] or pushButton.timestamps[1]):
@@ -409,9 +389,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.dateButtons[x].setStyleSheet("color: rgb(100, 100, 100)")
             elif x + 1 == today.day() and month == today.month():
                 self.dateButtons[x].setStyleSheet("color: red")
-                self.trayActions["Start Day"].setDisabled(
-                    self.starttimeTime[x].time().msecsSinceStartOfDay()
-                )
+                self.trayActions["Start Day"].setDisabled(self.starttimeTime[x].time().msecsSinceStartOfDay())
             else:
                 self.dateButtons[x].setStyleSheet("color: black")
 
@@ -435,9 +413,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.plannedTimeLabels[x].show()
                 self.vacationCheckBoxes[x].show()
                 dayOfWeek = QtCore.QDate(year, month, x + 1).dayOfWeek()
-                self.dateButtons[x].setText(
-                    f"{dayString[dayOfWeek]} {x + 1}.{month}.{year}"
-                )
+                self.dateButtons[x].setText(f"{dayString[dayOfWeek]} {x + 1}.{month}.{year}")
                 # self.dataButtons[x].set
                 self.plannedTimeLabels[x].setText(hours[dayOfWeek])
 
@@ -445,12 +421,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 self.detailInputs(x)
 
-                calcNeeded = (
-                    seconds[dayOfWeek] and
-                    (
-                        not self.vacationCheckBoxes[x].isChecked() or
-                        self.vacationCheckBoxes[x].isChecked() and self.vacationCheckBoxes[x].isZA
-                    )
+                calcNeeded = seconds[dayOfWeek] and (
+                    not self.vacationCheckBoxes[x].isChecked()
+                    or self.vacationCheckBoxes[x].isChecked()
+                    and self.vacationCheckBoxes[x].isZA
                 )
                 if calcNeeded:
                     self.starttimeTime[x].show()
@@ -473,10 +447,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     # calc diff time
                     newStart = self.starttimeTime[x].time().addSecs(seconds[dayOfWeek])
                     diff = newStart.secsTo(self.endtimeTime[x].time())
-                    if (
-                        self.breakCheckBoxes[x].isChecked()
-                        and self.endtimeTime[x].time().msecsSinceStartOfDay()
-                    ):
+                    if self.breakCheckBoxes[x].isChecked() and self.endtimeTime[x].time().msecsSinceStartOfDay():
                         diff -= self.config["lunchBreak"] * 60
                     if diff < 0:
                         diffTime = QtCore.QTime(0, 0).addSecs(-diff)
@@ -516,9 +487,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.HOCheckBoxes[x].hide()
 
         self.setZAHours(ZA)
-        self.hoursTotal.setText(
-            f"{tH // 3600}:{tH % 3600 // 60:002}/{pTH // 3600}:{pTH % 3600 // 60:002}"
-        )
+        self.hoursTotal.setText(f"{tH // 3600}:{tH % 3600 // 60:002}/{pTH // 3600}:{pTH % 3600 // 60:002}")
         self.updateonSitePercentage()
 
     def updateonSitePercentage(self):
@@ -538,16 +507,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.onSitePercentage.setStyleSheet("")
 
     def detailInputs(self, index: int):
-        if (
-            self.dateButtons[index].timestamps[0]
-            and self.dateButtons[index].timestamps[1]
-        ):
-            self.starttimeTime[index].setTime(
-                QtCore.QTime(minutesToTime(self.dateButtons[index].timestamps[0]))
-            )
-            self.endtimeTime[index].setTime(
-                QtCore.QTime(minutesToTime(self.dateButtons[index].timestamps[1]))
-            )
+        if self.dateButtons[index].timestamps[0] and self.dateButtons[index].timestamps[1]:
+            self.starttimeTime[index].setTime(QtCore.QTime(minutesToTime(self.dateButtons[index].timestamps[0])))
+            self.endtimeTime[index].setTime(QtCore.QTime(minutesToTime(self.dateButtons[index].timestamps[1])))
             self.starttimeTime[index].setEnabled(False)
             self.endtimeTime[index].setEnabled(False)
         else:
@@ -561,21 +523,15 @@ class MainWindow(QtWidgets.QMainWindow):
             and self.config["forecastEndTimes"]
         ):
             # no end time set yet but start time is --> automatically set endtime
-            startTimeSeconds = QtCore.QTime(0, 0).secsTo(
-                self.starttimeTime[index].time()
-            )
-            diffTime = (
-                self.endtimeTime[index].time().addSecs(startTimeSeconds + daySeconds)
-            )
+            startTimeSeconds = QtCore.QTime(0, 0).secsTo(self.starttimeTime[index].time())
+            diffTime = self.endtimeTime[index].time().addSecs(startTimeSeconds + daySeconds)
             if self.breakCheckBoxes[index].isChecked():
                 diffTime = diffTime.addSecs(self.config["lunchBreak"] * 60)
             self.endtimeTime[index].setTime(diffTime)
 
     def workedDayHours(self, index: int):
         if self.starttimeTime[index].time().msecsSinceStartOfDay():
-            diff = (
-                self.starttimeTime[index].time().secsTo(self.endtimeTime[index].time())
-            )
+            diff = self.starttimeTime[index].time().secsTo(self.endtimeTime[index].time())
             if self.breakCheckBoxes[index].isChecked():
                 diff -= self.config["lunchBreak"] * 60
             diffTime = QtCore.QTime(0, 0).addSecs(diff)
@@ -755,19 +711,11 @@ class WorkPackageWidget(QtWidgets.QWidget):
         self.ticket = QtWidgets.QPushButton()
         self.name = QtWidgets.QLabel()
         self.time = QtWidgets.QLabel()
-        self.startStopButton = QtWidgets.QPushButton(
-            QtGui.QPixmap(resource_path("play.png")), ""
-        )
+        self.startStopButton = QtWidgets.QPushButton(QtGui.QPixmap(resource_path("play.png")), "")
         self.startStopButton.setCheckable(True)
-        self.logButton = QtWidgets.QPushButton(
-            QtGui.QPixmap(resource_path("jira.png")), "Log to Jira"
-        )
-        self.editButton = QtWidgets.QPushButton(
-            QtGui.QPixmap(resource_path("edit.png")), ""
-        )
-        self.removeButton = QtWidgets.QPushButton(
-            QtGui.QPixmap(resource_path("delete.png")), ""
-        )
+        self.logButton = QtWidgets.QPushButton(QtGui.QPixmap(resource_path("jira.png")), "Log to Jira")
+        self.editButton = QtWidgets.QPushButton(QtGui.QPixmap(resource_path("edit.png")), "")
+        self.removeButton = QtWidgets.QPushButton(QtGui.QPixmap(resource_path("delete.png")), "")
 
         self.ticket.clicked.connect(self.openUrl)
         self.logButton.clicked.connect(self.logToJira)
@@ -873,9 +821,7 @@ class WorkPackageView(QtWidgets.QDialog):
     def __init__(self, parent):
         super().__init__(
             parent,
-            QtCore.Qt.WindowCloseButtonHint
-            | QtCore.Qt.WindowTitleHint
-            | QtCore.Qt.WindowSystemMenuHint,
+            QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowTitleHint | QtCore.Qt.WindowSystemMenuHint,
         )
         self.setWindowTitle("Work Packages")
         wps = self.parent().workPackages
@@ -889,9 +835,7 @@ class WorkPackageView(QtWidgets.QDialog):
         mainWidget.setLayout(self.splitter)
         scrollArea.setWidget(mainWidget)
         scrollArea.setWidgetResizable(True)
-        scrollArea.setHorizontalScrollBarPolicy(
-            QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff
-        )
+        scrollArea.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scrollArea.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         scrollArea.setSizeAdjustPolicy(QtWidgets.QAbstractScrollArea.AdjustToContents)
 
@@ -951,9 +895,7 @@ class WorkPackageEditDialog(QtWidgets.QDialog):
     def __init__(self, parent, workpackage):
         super().__init__(
             parent,
-            QtCore.Qt.WindowCloseButtonHint
-            | QtCore.Qt.WindowTitleHint
-            | QtCore.Qt.WindowSystemMenuHint,
+            QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowTitleHint | QtCore.Qt.WindowSystemMenuHint,
         )
         self.setWindowTitle("Edit Work Package")
         self.workpackage = workpackage
@@ -996,9 +938,7 @@ class WorkPackageEditDialog(QtWidgets.QDialog):
 
         self.updateTime(True)
 
-        buttonbox = QtWidgets.QDialogButtonBox(
-            QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel
-        )
+        buttonbox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
         buttonbox.accepted.connect(self.accept)
         buttonbox.rejected.connect(self.reject)
 
@@ -1070,26 +1010,30 @@ def start_GUI():
                 window = findWindow(pid)
                 if window:
                     ret = QtWidgets.QMessageBox.warning(
-                        QtWidgets.QWidget(), "UltraTime already running",
+                        QtWidgets.QWidget(),
+                        "UltraTime already running",
                         "Do you want to start a second instance?\n\n"
                         "It might lead to inconsistencies or overwriting of time data!\n"
                         "Click open to activate the first instance",
                         QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No | QtWidgets.QMessageBox.Open,
-                        QtWidgets.QMessageBox.Open)
+                        QtWidgets.QMessageBox.Open,
+                    )
                 else:
                     ret = QtWidgets.QMessageBox.warning(
-                        QtWidgets.QWidget(), "UltraTime already running",
+                        QtWidgets.QWidget(),
+                        "UltraTime already running",
                         "Do you want to start a second instance?\n\n"
                         "It might lead to inconsistencies or overwriting of time data!",
                         QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-                        QtWidgets.QMessageBox.No)
+                        QtWidgets.QMessageBox.No,
+                    )
                 if QtWidgets.QMessageBox.No == ret:
                     start = False
                     print("Aborted starting")
                 if QtWidgets.QMessageBox.Open == ret:
                     start = False
                     shell = win32com.client.Dispatch("WScript.Shell")
-                    shell.SendKeys('%')
+                    shell.SendKeys("%")
                     win32gui.SetForegroundWindow(window)
                     print("Aborted starting - Showed other instance instead")
 

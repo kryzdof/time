@@ -132,17 +132,13 @@ class DetailTimesDialog(QtWidgets.QDialog):
         label.setAlignment(QtCore.Qt.AlignHCenter)
         mainLayout.addWidget(label, 0, 5)
 
-        for x, timestamps in zip_longest(
-            range(10), self.timeStampData, fillvalue=(0, 0, 0)
-        ):
+        for x, timestamps in zip_longest(range(10), self.timeStampData, fillvalue=(0, 0, 0)):
             if len(timestamps) == 2:
                 start, end, timeType = *timestamps, 0
             else:
                 start, end, timeType = timestamps
 
-            autoTime = QtWidgets.QPushButton(
-                QtGui.QPixmap(resource_path("time.png")), ""
-            )
+            autoTime = QtWidgets.QPushButton(QtGui.QPixmap(resource_path("time.png")), "")
             autoTime.clicked.connect(self.updateAutoTime)
             mainLayout.addWidget(autoTime, x + 1, 0)
             t = QtCore.QTime(minutesToTime(start))
@@ -157,9 +153,7 @@ class DetailTimesDialog(QtWidgets.QDialog):
             endTimes.timeChanged.connect(self.updateDiffs)
             self.endTimes.append(endTimes)
             mainLayout.addWidget(endTimes, x + 1, 2)
-            autoTime = QtWidgets.QPushButton(
-                QtGui.QPixmap(resource_path("time.png")), ""
-            )
+            autoTime = QtWidgets.QPushButton(QtGui.QPixmap(resource_path("time.png")), "")
             autoTime.QTimeReference = endTimes
             autoTime.clicked.connect(self.updateAutoTime)
             mainLayout.addWidget(autoTime, x + 1, 3)
@@ -186,12 +180,8 @@ class DetailTimesDialog(QtWidgets.QDialog):
         )
         buttonbox.accepted.connect(self.accept)
         buttonbox.rejected.connect(self.reject)
-        buttonbox.button(QtWidgets.QDialogButtonBox.Reset).clicked.connect(
-            self.resetTimes
-        )
-        buttonbox.button(QtWidgets.QDialogButtonBox.Discard).clicked.connect(
-            self.discardTimes
-        )
+        buttonbox.button(QtWidgets.QDialogButtonBox.Reset).clicked.connect(self.resetTimes)
+        buttonbox.button(QtWidgets.QDialogButtonBox.Discard).clicked.connect(self.discardTimes)
 
         mainLayout.addWidget(buttonbox, 20, 0, 1, 5)
         self.setLayout(mainLayout)
@@ -215,14 +205,10 @@ class DetailTimesDialog(QtWidgets.QDialog):
                 self.timeDuration[x].setText(diffTime.toString("h:mm"))
                 self.timeDuration[x].show()
 
-        self.totalTime.setText(
-            QtCore.QTime(0, 0).addSecs(self.totalDiff).toString("h:mm")
-        )
+        self.totalTime.setText(QtCore.QTime(0, 0).addSecs(self.totalDiff).toString("h:mm"))
 
     def resetTimes(self):
-        for x, timestamps in zip_longest(
-            range(10), self.timeStampData, fillvalue=(0, 0, 0)
-        ):
+        for x, timestamps in zip_longest(range(10), self.timeStampData, fillvalue=(0, 0, 0)):
             if len(timestamps) == 2:
                 start, end, timeType = *timestamps, 0
             else:
@@ -292,16 +278,13 @@ class SettingsDialog(QtWidgets.QDialog):
         lunchSettingsLayout = QtWidgets.QGridLayout()
         lunchSettingsWidgets = QtWidgets.QGroupBox("Lunch Settings")
         _lunchSettingsWidgetsText = (
-            "This time will be reduced from your working hours if the lunch break checkbox "
-            "is set"
+            "This time will be reduced from your working hours if the lunch break checkbox is set"
         )
         lunchSettingsWidgets.setToolTip(_lunchSettingsWidgetsText)
         lunchSettingsWidgets.setWhatsThis(_lunchSettingsWidgetsText)
         label = QtWidgets.QLabel("Normal Lunch Break")
         lunchSettingsLayout.addWidget(label, 0, 0)
-        self.lunchTime = AdvancedTimeEdit(
-            QtCore.QTime(0, 0).addSecs(self.config["lunchBreak"] * 60)
-        )
+        self.lunchTime = AdvancedTimeEdit(QtCore.QTime(0, 0).addSecs(self.config["lunchBreak"] * 60))
         lunchSettingsLayout.addWidget(self.lunchTime, 0, 1)
         lunchSettingsWidgets.setLayout(lunchSettingsLayout)
 
@@ -356,11 +339,13 @@ class SettingsDialog(QtWidgets.QDialog):
         self.dailyOfficePercentage.setDisabled(not self.config["dailyOfficePercentageAutoCalc"])
         self.dailyOfficePercentageCheckBox.toggled.connect(self.dailyOfficePercentageSetDisabled)
 
-        _dailyOfficePercentageText = ("Office percentage on a daily basis.\n"
-                                      "If enabled the daily time details are triggering an update on save.\n"
-                                      "If the percentage of office time on that day is higher, "
-                                      "the threshold it is considered an office day.\n"
-                                      "Any non-home-office time is considered office.")
+        _dailyOfficePercentageText = (
+            "Office percentage on a daily basis.\n"
+            "If enabled the daily time details are triggering an update on save.\n"
+            "If the percentage of office time on that day is higher, "
+            "the threshold it is considered an office day.\n"
+            "Any non-home-office time is considered office."
+        )
         self.dailyOfficePercentage.setToolTip(_dailyOfficePercentageText)
         self.dailyOfficePercentage.setWhatsThis(_dailyOfficePercentageText)
         self.dailyOfficePercentageCheckBox.setWhatsThis(_dailyOfficePercentageText)
@@ -384,9 +369,7 @@ class SettingsDialog(QtWidgets.QDialog):
         self.uidLabel = QtWidgets.QLabel("User ID")
         self.uidLE = QtWidgets.QLineEdit(self.config["uid"])
         self.passwordLabel = QtWidgets.QLabel("Password")
-        self.passwordLE = QtWidgets.QLineEdit(
-            keyring.get_password("jiraconnection", self.config["uid"])
-        )
+        self.passwordLE = QtWidgets.QLineEdit(keyring.get_password("jiraconnection", self.config["uid"]))
         self.passwordLE.setEchoMode(QtWidgets.QLineEdit.Password)
         self.jiraVerifyButton = QtWidgets.QPushButton("Verify")
         self.jiraVerifyButton.clicked.connect(self.verifyJira)
@@ -413,9 +396,7 @@ class SettingsDialog(QtWidgets.QDialog):
         workPackageLayout.addWidget(self.workPackageOnStartUpActive, 1, 0, 1, 2)
         workPackageLocationWidgets.setLayout(workPackageLayout)
 
-        buttonbox = QtWidgets.QDialogButtonBox(
-            QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel
-        )
+        buttonbox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
         buttonbox.accepted.connect(self.accept)
         buttonbox.rejected.connect(self.reject)
 
@@ -433,9 +414,7 @@ class SettingsDialog(QtWidgets.QDialog):
 
     def accept(self):
         cfg = self.getConfig()
-        cfg["hours"] = [timeToMinutes(QtCore.QTime(0, 0))] + [
-            timeToMinutes(x.time()) for x in self.workingTimes
-        ]
+        cfg["hours"] = [timeToMinutes(QtCore.QTime(0, 0))] + [timeToMinutes(x.time()) for x in self.workingTimes]
         cfg["lunchBreak"] = timeToMinutes(self.lunchTime.time())
         cfg["connectHoursAndMinutes"] = self.hourWrapAround.isChecked()
         cfg["forecastEndTimes"] = self.autoCalcEndTime.isChecked()
@@ -469,9 +448,7 @@ class SettingsDialog(QtWidgets.QDialog):
                     QtWidgets.QMessageBox.Ok,
                 )
             except Exception as e:
-                QtWidgets.QMessageBox.warning(
-                    self, "Jira Connection Error", str(e), QtWidgets.QMessageBox.Ok
-                )
+                QtWidgets.QMessageBox.warning(self, "Jira Connection Error", str(e), QtWidgets.QMessageBox.Ok)
 
     @staticmethod
     def saveConfig(cfg):
@@ -497,10 +474,7 @@ class SettingsDialog(QtWidgets.QDialog):
         t2 = 5 * 60 + 30
         t3 = 0
         cfg = {
-            "hours": [
-                minutesToTime(x)
-                for x in config.get("hours", [t3, t1, t1, t1, t1, t2, t3, t3])
-            ],
+            "hours": [minutesToTime(x) for x in config.get("hours", [t3, t1, t1, t1, t1, t2, t3, t3])],
             "lunchBreak": config.get("lunchBreak", 30),
             "connectHoursAndMinutes": config.get("connectHoursAndMinutes", False),
             "forecastEndTimes": config.get("forecastEndTimes", True),
@@ -511,7 +485,7 @@ class SettingsDialog(QtWidgets.QDialog):
             "url": config.get("url", "https://jira-ibs.zone2.agileci.conti.de"),
             "uid": config.get("uid", ""),
             "wpLocation": config.get("wpLocation", 2),
-            "wpActive": config.get("wpActive", False)
+            "wpActive": config.get("wpActive", False),
         }
         AdvancedTimeEdit.connectHoursAndMinutes = cfg["connectHoursAndMinutes"]
         return cfg
