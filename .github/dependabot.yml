@@ -5,6 +5,20 @@
 
 version: 2
 updates:
+  - package-ecosystem: "pip" # See documentation for possible values
+    directory: "/" # Location of package manifests
+    schedule:
+      interval: "weekly"
+    ignore:
+      - dependency-name: "pefile"
+        versions: ["2024.8.26"]
+    open-pull-requests-limit: 15
+    groups:
+      python:
+        applies-to: version-updates
+        patterns:
+        - "*"
+
   - package-ecosystem: "uv" # See documentation for possible values
     directory: "/" # Location of package manifests
     schedule:
