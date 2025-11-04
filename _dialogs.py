@@ -105,7 +105,12 @@ class AdvancedSpinBox(QtWidgets.QSpinBox):
 
 
 class DetailTimesDialog(QtWidgets.QDialog):
-    def __init__(self, parent: QtWidgets.QWidget | None, title: str, data: list[tuple[int, int, int]]) -> None:  # noqa: PLR0915
+    def __init__(  # noqa: PLR0915
+        self,
+        parent: QtWidgets.QWidget | None,
+        title: str,
+        data: list[tuple[int, int, int]],
+    ) -> None:
         super().__init__(parent=parent)
 
         self.timeStampData = data
@@ -238,15 +243,14 @@ class DetailTimesDialog(QtWidgets.QDialog):
         else:
             totalStart = QtCore.QTime(0, 0)
             totalEnd = QtCore.QTime(0, 0)
-        timeStamps = []
-        for x in range(10):
-            timeStamps.append(
-                (
-                    timeToMinutes(self.startTimes[x].time()),
-                    timeToMinutes(self.endTimes[x].time()),
-                    self.timeTypes[x].state,
-                ),
+        timeStamps = [
+            (
+                timeToMinutes(self.startTimes[x].time()),
+                timeToMinutes(self.endTimes[x].time()),
+                self.timeTypes[x].state,
             )
+            for x in range(10)
+        ]
         return timeToMinutes(totalStart), timeToMinutes(totalEnd), timeStamps
 
 
@@ -449,7 +453,10 @@ class SettingsDialog(QtWidgets.QDialog):
                 QtWidgets.QMessageBox.warning(self, "Jira Connection Error", str(e), QtWidgets.QMessageBox.Ok)
         else:
             QtWidgets.QMessageBox.warning(
-                self, "No Credentials", "Please provide User ID and Password", QtWidgets.QMessageBox.Ok,
+                self,
+                "No Credentials",
+                "Please provide User ID and Password",
+                QtWidgets.QMessageBox.Ok,
             )
 
     @staticmethod

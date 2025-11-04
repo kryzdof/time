@@ -367,7 +367,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 for start, end, state in pushButton.timestamps[2]:
                     if state == 0:
                         officeTime -= end - start
-                print(officeTime / totalTime * 100, self.config["dailyOfficePercentage"])
                 self.HOCheckBoxes[self.dateButtons.index(pushButton)].setChecked(
                     officeTime / totalTime * 100 <= self.config["dailyOfficePercentage"]
                 )
