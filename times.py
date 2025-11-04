@@ -25,8 +25,11 @@ MAXIMUM_DAILY_ALLOWED_WORK_HOURS = 10
 
 
 class MainWindow(QtWidgets.QMainWindow):
-    def __init__(self, parent=None, app=None):
-        super(MainWindow, self).__init__(parent)
+    """Main application window for time tracking."""
+
+    def __init__(self, parent: QtWidgets.QWidget | None = None, app: QtWidgets.QApplication | None = None) -> None:
+        """Create main application window for time tracking."""
+        super().__init__(parent)
 
         self.setObjectName("Times")
         self.setWindowTitle(f"Times {version}")
@@ -815,7 +818,7 @@ class WorkPackageWidget(QtWidgets.QWidget):
             url = f"{urlStart}/browse/{self._workpackage.ticket}"
             QtGui.QDesktopServices.openUrl(QtCore.QUrl(url))
         else:
-            name, ok = QtWidgets.QInputDialog.getText(self, "Ticket-ID (e.g. GMCTC-1234)", "Ticket", QtWidgets.QLineEdit.Normal)
+            name, ok = QtWidgets.QInputDialog.getText(self, "Ticket-ID (e.g. PR-1234)", "Ticket", QtWidgets.QLineEdit.Normal)
             if ok:
                 self._workpackage.ticket = name
                 self.ticket.setText(name)
