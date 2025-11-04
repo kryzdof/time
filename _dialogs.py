@@ -280,9 +280,7 @@ class SettingsDialog(QtWidgets.QDialog):
 
         lunchSettingsLayout = QtWidgets.QGridLayout()
         lunchSettingsWidgets = QtWidgets.QGroupBox("Lunch Settings")
-        _lunchSettingsWidgetsText = (
-            "This time will be reduced from your working hours if the lunch break checkbox is set"
-        )
+        _lunchSettingsWidgetsText = "This time will be reduced from your working hours if the lunch break checkbox is set"
         lunchSettingsWidgets.setToolTip(_lunchSettingsWidgetsText)
         lunchSettingsWidgets.setWhatsThis(_lunchSettingsWidgetsText)
         label = QtWidgets.QLabel("Normal Lunch Break")
@@ -296,8 +294,7 @@ class SettingsDialog(QtWidgets.QDialog):
         self.autoCalcEndTime = QtWidgets.QCheckBox("Forecast end time")
         self.autoCalcEndTime.setChecked(self.config["forecastEndTimes"])
         _autoCalcEndTimeText = (
-            "This will automatically calculate the end time of the day according "
-            "to the supposed working hours for this day"
+            "This will automatically calculate the end time of the day according to the supposed working hours for this day"
         )
         self.autoCalcEndTime.setToolTip(_autoCalcEndTimeText)
         self.autoCalcEndTime.setWhatsThis(_autoCalcEndTimeText)
