@@ -1,19 +1,23 @@
-from pathlib import Path
+"""Main application window for time tracking."""
+
+from __future__ import annotations
+
 import calendar
 import json
 import os
 import shutil
 import sys
 import time
+from pathlib import Path
 
 import psutil
 import win32com.client
 import win32gui
 import win32process
-from PySide6 import QtCore, QtWidgets, QtGui
+from PySide6 import QtCore, QtGui, QtWidgets
 
 import _dialogs as dialogs
-from _utils import resource_path, minutesToTime, timeToMinutes, JiraWriteLog
+from _utils import JiraWriteLog, minutesToTime, resource_path, timeToMinutes
 
 version = "replace me for real version"
 
@@ -171,7 +175,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.hSplitter = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
         self.hSplitter.addWidget(vSplitter)
         wpl = self.config["wpLocation"]
-        if wpl < 2:
+        if wpl < 2:  # noqa: PLR2004  - could be fixed at some point by making it an enum...
             self.hSplitter.insertWidget(wpl, self.workPackageView)
 
         self.workPackageView.setVisible(self.config["wpActive"])
@@ -182,7 +186,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.app:
             self.app.setQuitOnLastWindowClosed(not self.config["minimize"])
             self.menu = None
-            self.trayActions = dict()
+            self.trayActions = {}
             self.trayIcon = None
             self.createTray()
 
@@ -196,7 +200,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.timer.start(1000)
         self.adjustSize()
 
-    def cyclicFunction(self):
+    def cyclicFunction(self) -> None:
+        """Update work packages and UI. Saves the workpackage data every 60 calls."""
         self.cyclicCounter = self.cyclicCounter % 60 + 1
         self.colorDates()
         self.workPackageView.updateChildrenData()
@@ -206,19 +211,22 @@ class MainWindow(QtWidgets.QMainWindow):
                 if self.cyclicCounter // 60:
                     self.saveWorkPackages()
 
-    def stopAllTracking(self, checked=None):
+    def stopAllTracking(self, checked: bool | None = None) -> None:
+        """Stop tracking on all work packages."""
         if checked:
             for wp in self.workPackages:
                 if wp.isChecked() and wp != self.sender():
                     wp.trigger()
 
-    def createTray(self):
+    def createTray(self) -> None:
+        """Create the system tray icon and its context menu."""
         self.trayIcon = QtWidgets.QSystemTrayIcon(QtGui.QIcon(resource_path("time.png")), self.app)
         self.trayIcon.show()
         self.trayIcon.activated.connect(self.trayActivated)
         self.createTrayMenu()
 
-    def createTrayMenu(self):
+    def createTrayMenu(self) -> None:
+        """Create the context menu for the system tray icon."""
         self.menu = QtWidgets.QMenu()
 
         action_newWP = QtGui.QAction("New Work Package")
@@ -257,18 +265,21 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.trayIcon.setContextMenu(self.menu)
 
-    def trayActivated(self, reason):
+    def trayActivated(self, reason: QtWidgets.QSystemTrayIcon.ActivationReason) -> None:
+        """Handle activation of the system tray icon."""
         if reason == QtWidgets.QSystemTrayIcon.Trigger:
             self.restore()
         if reason == QtWidgets.QSystemTrayIcon.MiddleClick:
             self.app.exit()
 
-    def restore(self):
+    def restore(self) -> None:
+        """Restore the main window from the system tray."""
         self.show()  # if closed to tray
         self.activateWindow()  # if in the background
         self.setWindowState(self.windowState() & ~QtCore.Qt.WindowMinimized | QtCore.Qt.WindowActive)  # if minimized
 
-    def startDay(self):
+    def startDay(self) -> None:
+        """Set the start time for the current day to the current time."""
         self.datetime.setDate(QtCore.QDate.currentDate())
         x = QtCore.QDate.currentDate().day() - 1
         h = QtCore.QTime.currentTime().hour()
@@ -277,7 +288,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.updateDateLabels()
         self.saveMonth()
 
-    def endDay(self):
+    def endDay(self) -> None:
+        """Set the end time for the current day to the current time."""
         self.datetime.setDate(QtCore.QDate.currentDate())
         x = QtCore.QDate.currentDate().day() - 1
         h = QtCore.QTime.currentTime().hour()
@@ -286,31 +298,31 @@ class MainWindow(QtWidgets.QMainWindow):
         self.updateDateLabels()
         self.saveMonth()
 
-    def loadWorkPackages(self):
+    def loadWorkPackages(self) -> list[WorkPackage]:
+        """Load work packages from a JSON file."""
         file = Path("workpackages.json")
         workPackages = []
         try:
             with file.open() as fp:
                 jsonWP = json.load(fp)
-                for wpJson in jsonWP:
-                    wp = WorkPackage(wpJson["name"], wpJson["ticket"], wpJson["loggedTime"])
-                    wp.triggered.connect(self.stopAllTracking)
-                    workPackages.append(wp)
-            return workPackages
+            for wpJson in jsonWP:
+                wp = WorkPackage(wpJson["name"], wpJson["ticket"], wpJson["loggedTime"])
+                wp.triggered.connect(self.stopAllTracking)
+                workPackages.append(wp)
         except Exception as e:
             print(e)
-            return workPackages
+        return workPackages
 
-    def saveWorkPackages(self):
+    def saveWorkPackages(self) -> None:
+        """Save the current work packages to a JSON file."""
         file = Path("workpackages.json")
         if self.workPackages:
-            workPackages = []
-            for wp in self.workPackages:
-                workPackages.append(wp.asJson())
+            workPackages = [wp.asJson() for wp in self.workPackages]
             with file.open("w") as fp:
                 json.dump(workPackages, fp, indent=4)
 
-    def newWorkPackage(self):
+    def newWorkPackage(self) -> None:
+        """Create a new work package with a unique name and start logging time on it."""
         name, ok = QtWidgets.QInputDialog.getText(
             self, "Name of new Work Package", "Please put in the name", QtWidgets.QLineEdit.Normal
         )
@@ -326,14 +338,17 @@ class MainWindow(QtWidgets.QMainWindow):
             self.createTrayMenu()
             self.workPackageView.addWorkPackage(wp)
 
-    def removeWorkPackage(self, wp):
+    def removeWorkPackage(self, wp: WorkPackage) -> None:
+        """Remove a work package from the list and update the tray menu."""
         self.workPackages.remove(wp)
         self.createTrayMenu()
 
-    def openWorkPackageView(self):
+    def openWorkPackageView(self) -> None:
+        """Show or hide the work package view based on the button state."""
         self.workPackageView.setVisible(self.workpackagesButton.isChecked())
 
-    def onSettingsClicked(self):
+    def onSettingsClicked(self) -> None:
+        """Open the settings dialog and apply changes if accepted."""
         if self.settings.exec():
             oldConfig = self.config
             self.config = self.settings.getConfig()
@@ -343,7 +358,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if wplChanged:
                 self.workPackageView.hide()
                 wpl = self.config["wpLocation"]
-                if wpl < 2:
+                if wpl < 2:  # noqa: PLR2004  - could be fixed at some point by making it an enum...
                     self.hSplitter.insertWidget(wpl, self.workPackageView)
                     self.workpackagesButton.setChecked(True)
                     self.workPackageView.show()
@@ -359,7 +374,8 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.adjustSize()
                     self.resize(self.width(), height)
 
-    def openDetailTimesDialog(self):
+    def openDetailTimesDialog(self) -> None:
+        """Open the detail times dialog for a specific day."""
         pushButton = self.sender()
         dlg = dialogs.DetailTimesDialog(self, pushButton.text(), pushButton.timestamps[2])
         if dlg.exec():
@@ -375,7 +391,12 @@ class MainWindow(QtWidgets.QMainWindow):
                 )
             self.updateDateLabels()
 
-    def colorDates(self, day=None):
+    def colorDates(self, day: int | None = None) -> None:
+        """
+        Color the date buttons based on the current date.
+
+        if day is set only color this specific day
+        """
         date = self.datetime.date()
         month = date.month()
         today = QtCore.QDate.currentDate()
@@ -393,10 +414,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.dateButtons[x].setStyleSheet("color: red")
                 self.trayActions["Start Day"].setDisabled(self.starttimeTime[x].time().msecsSinceStartOfDay())
             else:
-                self.dateButtons[x].setStyleSheet("color: black")
+                self.dateButtons[x].setStyleSheet("")
 
-    def updateDateLabels(self):
-        dayString = [""] + [d for d in calendar.day_abbr]
+    def updateDateLabels(self) -> None:
+        """Update all date labels and calculations for the current month."""
+        dayString = ["", *list(calendar.day_abbr)]
         hours = [x.toString("h:mm") for x in self.config["hours"]]
         zero = QtCore.QTime(0, 0)
         seconds = [zero.secsTo(x) for x in self.config["hours"]]
@@ -416,7 +438,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.vacationCheckBoxes[x].show()
                 dayOfWeek = QtCore.QDate(year, month, x + 1).dayOfWeek()
                 self.dateButtons[x].setText(f"{dayString[dayOfWeek]} {x + 1}.{month}.{year}")
-                # self.dataButtons[x].set
                 self.plannedTimeLabels[x].setText(hours[dayOfWeek])
 
                 self.colorDates(x)
@@ -425,8 +446,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 calcNeeded = seconds[dayOfWeek] and (
                     not self.vacationCheckBoxes[x].isChecked()
-                    or self.vacationCheckBoxes[x].isChecked()
-                    and self.vacationCheckBoxes[x].isZA
+                    or (self.vacationCheckBoxes[x].isChecked() and self.vacationCheckBoxes[x].isZA)
                 )
                 if calcNeeded:
                     self.starttimeTime[x].show()
@@ -444,7 +464,7 @@ class MainWindow(QtWidgets.QMainWindow):
                         self.breakCheckBoxes[x].show()
                         self.HOCheckBoxes[x].show()
 
-                    self.addLunchBreak(x, seconds[dayOfWeek])
+                    self.addEndTime(x, seconds[dayOfWeek])
 
                     # calc diff time
                     newStart = self.starttimeTime[x].time().addSecs(seconds[dayOfWeek])
@@ -492,7 +512,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.hoursTotal.setText(f"{tH // 3600}:{tH % 3600 // 60:002}/{pTH // 3600}:{pTH % 3600 // 60:002}")
         self.updateonSitePercentage()
 
-    def updateonSitePercentage(self):
+    def updateonSitePercentage(self) -> None:
+        """Calculate and update the on-site work percentage."""
         workingDays = 0
         officeDays = 0
         for HOCheckBox in self.HOCheckBoxes:
@@ -508,7 +529,8 @@ class MainWindow(QtWidgets.QMainWindow):
             else:
                 self.onSitePercentage.setStyleSheet("")
 
-    def detailInputs(self, index: int):
+    def detailInputs(self, index: int) -> None:
+        """Enable/disable inputs based on stored timestamps."""
         if self.dateButtons[index].timestamps[0] and self.dateButtons[index].timestamps[1]:
             self.starttimeTime[index].setTime(QtCore.QTime(minutesToTime(self.dateButtons[index].timestamps[0])))
             self.endtimeTime[index].setTime(QtCore.QTime(minutesToTime(self.dateButtons[index].timestamps[1])))
@@ -518,8 +540,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.starttimeTime[index].setEnabled(True)
             self.endtimeTime[index].setEnabled(True)
 
-    def addLunchBreak(self, index: int, daySeconds: int) -> None:
-        """Automatically add lunch break to end time if start time is set and end time is not."""
+    def addEndTime(self, index: int, daySeconds: int) -> None:
+        """Automatically set end time if only start time is set and forecastEndTimes is enabled."""
         if (
             not self.endtimeTime[index].time().msecsSinceStartOfDay()
             and self.starttimeTime[index].time().msecsSinceStartOfDay()
@@ -545,6 +567,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.fullTimeLabels[index].setStyleSheet("color: red")
             else:
                 self.fullTimeLabels[index].setStyleSheet("")
+                self.fullTimeLabels[index].setStyle(None)
+                # setting the style sheet alone did not remove the red color on Windows
             return diff
         self.fullTimeLabels[index].setText("")
         return 0
