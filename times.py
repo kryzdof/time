@@ -1,3 +1,4 @@
+from pathlib import Path
 import calendar
 import json
 import os
@@ -284,10 +285,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.saveMonth()
 
     def loadWorkPackages(self):
-        file = "workpackages.json"
+        file = Path("workpackages.json")
         workPackages = []
         try:
-            with open(file, "r") as fp:
+            with file.open() as fp:
                 jsonWP = json.load(fp)
                 for wpJson in jsonWP:
                     wp = WorkPackage(wpJson["name"], wpJson["ticket"], wpJson["loggedTime"])
@@ -299,12 +300,12 @@ class MainWindow(QtWidgets.QMainWindow):
             return workPackages
 
     def saveWorkPackages(self):
-        file = "workpackages.json"
+        file = Path("workpackages.json")
         if self.workPackages:
             workPackages = []
             for wp in self.workPackages:
                 workPackages.append(wp.asJson())
-            with open(file, "w") as fp:
+            with file.open("w") as fp:
                 json.dump(workPackages, fp, indent=4)
 
     def newWorkPackage(self):
@@ -570,17 +571,19 @@ class MainWindow(QtWidgets.QMainWindow):
             timestamps = self.dateButtons[x].timestamps
             za = v and self.vacationCheckBoxes[x].isZA
             data[f"{x}"] = [s, e, v, lb, ho, timestamps, za]
-        if not os.path.exists("data"):
-            os.mkdir("data")
-        with open(rf"data\{data['MonthAndYear']}.json", "w") as fp:
+        dataFolder = Path("data")
+        if not dataFolder.exists():
+            dataFolder.mkdir()
+        monthFile = dataFolder / f"{data['MonthAndYear']}.json"
+        with monthFile.open("w") as fp:
             json.dump(data, fp, indent=4)
 
     def loadMonth(self):
         # load all data if possible
-        file = rf"data\{self.oldDateTime.toString('MMMM yyyy')}.json"
-        if os.path.exists(file):
-            shutil.copy(file, file.replace(".json", ".json.bak"))
-            with open(file, "r") as fp:
+        file = Path(rf"data\{self.oldDateTime.toString('MMMM yyyy')}.json")
+        if file.exists():
+            shutil.copy(file, str(file).replace(".json", ".json.bak"))
+            with file.open() as fp:
                 data = json.load(fp)
                 date = self.datetime.date()
                 for x in range(date.daysInMonth()):
@@ -965,16 +968,16 @@ class WorkPackageEditDialog(QtWidgets.QDialog):
         self.hourEdit.setDisabled(isChecked)
         self.minuteEdit.setDisabled(isChecked)
 
-    def getMainWindow(self, parent):
+    def getMainWindow(self, parent: QtWidgets.QWidget) -> MainWindow | None:
+        """Get the main window from parent."""
         if parent:
             if isinstance(parent, MainWindow):
                 return parent
-            else:
-                return self.getMainWindow(parent.parent())
-        else:
-            return None
+            return self.getMainWindow(parent.parent())
+        return None
 
-    def accept(self):
+    def accept(self) -> None:
+        """Call when OK is pressed."""
         mainWindow = self.getMainWindow(self.parent())
         if self.workpackage.name != self.nameLE.text() and self.nameLE.text() in [
             wp.name for wp in mainWindow.workPackages
@@ -992,18 +995,18 @@ class WorkPackageEditDialog(QtWidgets.QDialog):
         super().accept()
 
 
-def start_GUI():
-    """Starts the GUI"""
+def start_GUI() -> None:
+    """Start the GUI."""
     app = QtWidgets.QApplication(sys.argv)
     app.setStyleSheet("QLabel { qproperty-alignment: AlignCenter; }")
     app.setApplicationName("Time Converter")
     app.setWindowIcon(QtGui.QPixmap(resource_path("time.png")))
     app.setQuitOnLastWindowClosed(False)
 
-    lockfile = "lockfile"
+    lockfile = Path("lockfile")
     start = True
-    if os.path.exists(lockfile):
-        with open(lockfile, "r") as fp:
+    if lockfile.exists():
+        with lockfile.open("r") as fp:
             pid = int(fp.read())
             if psutil.pid_exists(pid) and psutil.Process(pid).name() in ["times.exe", "python.exe"]:
                 window = findWindow(pid)
@@ -1037,8 +1040,7 @@ def start_GUI():
                     print("Aborted starting - Showed other instance instead")
 
     if start:
-        with open(lockfile, "w") as fp:
-            fp.write(str(os.getpid()))
+        lockfile.write_text(str(os.getpid()))
 
         window = MainWindow(app=app)
         window.setWindowIcon(QtGui.QPixmap(resource_path("time.png")))
@@ -1046,19 +1048,21 @@ def start_GUI():
 
         app.exec()
         window.saveWorkPackages()
-        os.remove(lockfile)
+        lockfile.unlink()
 
 
-def windowEnumerationHandler(hwnd, top_windows):
+def windowEnumerationHandler(hwnd: int, top_windows: list) -> None:
+    """Fill top_windows with all window handles."""
     top_windows.append((hwnd, win32gui.GetWindowText(hwnd), win32process.GetWindowThreadProcessId(hwnd)[1]))
 
 
-def findWindow(pid):
+def findWindow(pid: int) -> int | None:
+    """Find the window handle for the given pid."""
     result = None
     top_windows = []
     win32gui.EnumWindows(windowEnumerationHandler, top_windows)
     for i in top_windows:
-        if pid == i[2] and "UltraTime" == i[1]:
+        if pid == i[2] and i[1] == "UltraTime":
             result = i[0]
     return result
 

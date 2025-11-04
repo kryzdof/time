@@ -33,10 +33,12 @@ ignore = [
       # I dont agree with them
     "TRY003",
       # generally a good idea but nothing I want to enforce (and in the way in my use case)
-    "BLE001",
+    "BLE001", "T201",
       # put it back in again later with additional logging
     "D203", "D212",
       # mutual exclusive rules to D211 and D212
     "COM812",
       # ruff advises against it
+    "FBT",
+      # there are valid use cases for using boolean arguments
     ]

@@ -412,7 +412,7 @@ class SettingsDialog(QtWidgets.QDialog):
         mainLayout.addWidget(buttonbox)
         self.setLayout(mainLayout)
 
-    def dailyOfficePercentageSetDisabled(self, checked: bool) -> None:  # noqa: FBT001
+    def dailyOfficePercentageSetDisabled(self, checked: bool) -> None:
         self.dailyOfficePercentage.setDisabled(not checked)
 
     def accept(self) -> None:
