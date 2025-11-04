@@ -1,12 +1,14 @@
 import calendar
 import json
+import logging
 from itertools import zip_longest
+from pathlib import Path
 
 import keyring
-from PySide6 import QtCore, QtWidgets, QtGui
 from keyring.backends.Windows import WinVaultKeyring
+from PySide6 import QtCore, QtGui, QtWidgets
 
-from _utils import minutesToTime, timeToMinutes, getJiraInstance, resource_path
+from _utils import getJiraInstance, minutesToTime, resource_path, timeToMinutes
 
 keyring.set_keyring(WinVaultKeyring())
 
@@ -14,26 +16,26 @@ keyring.set_keyring(WinVaultKeyring())
 class AdvancedTimeEdit(QtWidgets.QTimeEdit):
     connectHoursAndMinutes = False
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: list, **kwargs: dict) -> None:
         super().__init__(*args, **kwargs)
         self.setDisplayFormat("hh:mm")
         self.setWrapping(True)
 
-    def stepBy(self, steps):
+    def stepBy(self, steps: int) -> None:
         if self.connectHoursAndMinutes:
             currentTime = self.time()
             super().stepBy(steps)
             if self.currentSection() == self.MinuteSection:
                 if currentTime.minute() == 0 and steps < 0:
                     self.setTime(self.time().addSecs(-3600))
-                if currentTime.minute() == 59 and steps > 0:
+                if currentTime.minute() == 59 and steps > 0:  # noqa: PLR2004
                     self.setTime(self.time().addSecs(3600))
         else:
             super().stepBy(steps)
 
 
 class VacationButton(QtWidgets.QPushButton):
-    def __init__(self, parent=None):
+    def __init__(self, parent: QtWidgets.QWidget | None = None) -> None:
         super().__init__(parent)
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(self.showContextMenu)
@@ -41,7 +43,7 @@ class VacationButton(QtWidgets.QPushButton):
         self.setIcon(QtGui.QPixmap(resource_path("black-plane.png")))
         self.isZA = False
 
-    def showContextMenu(self, pos):
+    def showContextMenu(self, pos: QtCore.QPoint) -> None:
         contextMenu = QtWidgets.QMenu(self)
         takeZA = contextMenu.addAction("Take ZA")
         takeZA.setCheckable(True)
@@ -51,15 +53,14 @@ class VacationButton(QtWidgets.QPushButton):
         if action == takeZA:
             self.isZA = not self.isZA
             self.setChecked(self.isZA)
-            print("Action 1 selected")
             self.clicked.emit()
 
 
 class TimeTypeButton(QtWidgets.QPushButton):
-    stateNames = ["Home Office", "Office", "Doctor Appointment", "Sick Leave"]
-    stateIcons = ["house.png", "office.png", "doctor.png", "poison.png"]
+    stateNames = ("Home Office", "Office", "Doctor Appointment", "Sick Leave")
+    stateIcons = ("house.png", "office.png", "doctor.png", "poison.png")
 
-    def __init__(self, stateType=0, parent=None):
+    def __init__(self, stateType: int = 0, parent: QtWidgets.QWidget | None = None) -> None:
         super().__init__(parent)
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(self.showContextMenu)
@@ -67,15 +68,15 @@ class TimeTypeButton(QtWidgets.QPushButton):
         self.setIcon(QtGui.QPixmap(resource_path(self.stateIcons[self.state])))
         self.clicked.connect(self.nextState)
 
-    def nextState(self):
+    def nextState(self) -> None:
         self.state = (self.state + 1) % len(self.stateIcons)
         self.setIcon(QtGui.QPixmap(resource_path(self.stateIcons[self.state])))
 
-    def setState(self, state):
+    def setState(self, state: int) -> None:
         self.state = state
         self.setIcon(QtGui.QPixmap(resource_path(self.stateIcons[self.state])))
 
-    def showContextMenu(self, pos):
+    def showContextMenu(self, pos: QtCore.QPoint) -> None:
         contextMenu = QtWidgets.QMenu(self)
         actions = []
         for index, state in enumerate(self.stateNames):
@@ -91,11 +92,11 @@ class TimeTypeButton(QtWidgets.QPushButton):
 class AdvancedSpinBox(QtWidgets.QSpinBox):
     wrapped = QtCore.Signal(int)
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: QtWidgets.QWidget | None = None) -> None:
         super().__init__(parent)
         self.setWrapping(True)
 
-    def stepBy(self, step):
+    def stepBy(self, step: int) -> None:
         if self.value() == self.minimum() and step < 0:
             self.wrapped.emit(-1)
         if self.value() == self.maximum() and step > 0:
@@ -104,7 +105,7 @@ class AdvancedSpinBox(QtWidgets.QSpinBox):
 
 
 class DetailTimesDialog(QtWidgets.QDialog):
-    def __init__(self, parent, title, data):
+    def __init__(self, parent: QtWidgets.QWidget | None, title: str, data: list[tuple[int, int, int]]) -> None:  # noqa: PLR0915
         super().__init__(parent=parent)
 
         self.timeStampData = data
@@ -133,7 +134,7 @@ class DetailTimesDialog(QtWidgets.QDialog):
         mainLayout.addWidget(label, 0, 5)
 
         for x, timestamps in zip_longest(range(10), self.timeStampData, fillvalue=(0, 0, 0)):
-            if len(timestamps) == 2:
+            if len(timestamps) == 2:  # noqa: PLR2004
                 start, end, timeType = *timestamps, 0
             else:
                 start, end, timeType = timestamps
@@ -176,7 +177,7 @@ class DetailTimesDialog(QtWidgets.QDialog):
             QtWidgets.QDialogButtonBox.Ok
             | QtWidgets.QDialogButtonBox.Cancel
             | QtWidgets.QDialogButtonBox.Reset
-            | QtWidgets.QDialogButtonBox.Discard
+            | QtWidgets.QDialogButtonBox.Discard,
         )
         buttonbox.accepted.connect(self.accept)
         buttonbox.rejected.connect(self.reject)
@@ -187,13 +188,13 @@ class DetailTimesDialog(QtWidgets.QDialog):
         self.setLayout(mainLayout)
         self.updateDiffs()
 
-    def updateAutoTime(self):
+    def updateAutoTime(self) -> None:
         timeEdit = self.sender().QTimeReference
         h = QtCore.QTime.currentTime().hour()
         m = QtCore.QTime.currentTime().minute()
         timeEdit.setTime(QtCore.QTime(h, m))
 
-    def updateDiffs(self):
+    def updateDiffs(self) -> None:
         self.totalDiff = 0
         for x in range(10):
             diff = self.startTimes[x].time().secsTo(self.endTimes[x].time())
@@ -207,20 +208,18 @@ class DetailTimesDialog(QtWidgets.QDialog):
 
         self.totalTime.setText(QtCore.QTime(0, 0).addSecs(self.totalDiff).toString("h:mm"))
 
-    def resetTimes(self):
+    def resetTimes(self) -> None:
         for x, timestamps in zip_longest(range(10), self.timeStampData, fillvalue=(0, 0, 0)):
-            if len(timestamps) == 2:
+            if len(timestamps) == 2:  # noqa: PLR2004
                 start, end, timeType = *timestamps, 0
             else:
                 start, end, timeType = timestamps
-            t = QtCore.QTime(minutesToTime(timestamps[0]))
-            self.startTimes[x].setTime(t)
-            t = QtCore.QTime(minutesToTime(timestamps[1]))
-            self.endTimes[x].setTime(t)
+            self.startTimes[x].setTime(QtCore.QTime(minutesToTime(start)))
+            self.endTimes[x].setTime(QtCore.QTime(minutesToTime(end)))
             self.timeTypes[x].setState(timeType)
         self.updateDiffs()
 
-    def discardTimes(self):
+    def discardTimes(self) -> None:
         for x in range(10):
             t = QtCore.QTime(minutesToTime(0))
             self.startTimes[x].setTime(t)
@@ -229,10 +228,10 @@ class DetailTimesDialog(QtWidgets.QDialog):
             self.timeTypes[x].setState(0)
         self.updateDiffs()
 
-    def accept(self):
+    def accept(self) -> None:
         super().accept()
 
-    def getDetails(self):
+    def getDetails(self) -> tuple[int, int, list[tuple[int, int, int]]]:
         if self.totalDiff:
             totalStart = QtCore.QTime(7, 0)
             totalEnd = totalStart.addSecs(self.totalDiff)
@@ -246,13 +245,13 @@ class DetailTimesDialog(QtWidgets.QDialog):
                     timeToMinutes(self.startTimes[x].time()),
                     timeToMinutes(self.endTimes[x].time()),
                     self.timeTypes[x].state,
-                )
+                ),
             )
         return timeToMinutes(totalStart), timeToMinutes(totalEnd), timeStamps
 
 
 class SettingsDialog(QtWidgets.QDialog):
-    def __init__(self, parent):
+    def __init__(self, parent: QtWidgets.QWidget | None) -> None:  # noqa: PLR0915
         super().__init__(parent=parent)
 
         self.config = self.getConfig()
@@ -264,7 +263,7 @@ class SettingsDialog(QtWidgets.QDialog):
         _timeSettingsWidgetsText = "Guess what! That are the daily working hours you think you should be working :)"
         timeSettingsWidgets.setToolTip(_timeSettingsWidgetsText)
         timeSettingsWidgets.setWhatsThis(_timeSettingsWidgetsText)
-        for x, dayStr in enumerate([d for d in calendar.day_name]):
+        for x, dayStr in enumerate(calendar.day_name):
             label = QtWidgets.QLabel(dayStr)
             timeSettingsLayout.addWidget(label, x + 1, 0)
         self.workingTimes = []
@@ -409,10 +408,10 @@ class SettingsDialog(QtWidgets.QDialog):
         mainLayout.addWidget(buttonbox)
         self.setLayout(mainLayout)
 
-    def dailyOfficePercentageSetDisabled(self, checked):
+    def dailyOfficePercentageSetDisabled(self, checked: bool) -> None:  # noqa: FBT001
         self.dailyOfficePercentage.setDisabled(not checked)
 
-    def accept(self):
+    def accept(self) -> None:
         cfg = self.getConfig()
         cfg["hours"] = [timeToMinutes(QtCore.QTime(0, 0))] + [timeToMinutes(x.time()) for x in self.workingTimes]
         cfg["lunchBreak"] = timeToMinutes(self.lunchTime.time())
@@ -423,9 +422,8 @@ class SettingsDialog(QtWidgets.QDialog):
         cfg["dailyOfficePercentageAutoCalc"] = self.dailyOfficePercentageCheckBox.isChecked()
         cfg["dailyOfficePercentage"] = self.dailyOfficePercentage.value()
         cfg["url"] = self.jiraUrlLE.text().rstrip("/")
-        if cfg["uid"] != self.uidLE.text():
-            if keyring.get_password("jiraconnection", cfg["uid"]):
-                keyring.delete_password("jiraconnection", cfg["uid"])
+        if cfg["uid"] != self.uidLE.text() and keyring.get_password("jiraconnection", cfg["uid"]):
+            keyring.delete_password("jiraconnection", cfg["uid"])
         cfg["uid"] = self.uidLE.text()
         cfg["wpLocation"] = self.workPackageLocationCombo.currentIndex()
         cfg["wpActive"] = self.workPackageOnStartUpActive.isChecked()
@@ -433,7 +431,7 @@ class SettingsDialog(QtWidgets.QDialog):
         self.saveConfig(cfg)
         super().accept()
 
-    def verifyJira(self):
+    def verifyJira(self) -> None:
         if self.uidLE.text() and self.passwordLE.text():
             try:
                 getJiraInstance(
@@ -451,28 +449,27 @@ class SettingsDialog(QtWidgets.QDialog):
                 QtWidgets.QMessageBox.warning(self, "Jira Connection Error", str(e), QtWidgets.QMessageBox.Ok)
         else:
             QtWidgets.QMessageBox.warning(
-                self, "No Credentials", "Please provide User ID and Password", QtWidgets.QMessageBox.Ok
+                self, "No Credentials", "Please provide User ID and Password", QtWidgets.QMessageBox.Ok,
             )
 
     @staticmethod
-    def saveConfig(cfg):
-        file = "settings.json"
-        with open(file, "w") as fp:
+    def saveConfig(cfg: dict) -> None:
+        settings = Path("settings.json")
+        with settings.open("w") as fp:
             json.dump(cfg, fp, indent=4)
 
     @staticmethod
-    def loadConfig():
-        file = "settings.json"
-        config = dict()
+    def loadConfig() -> dict:
+        settings = Path("settings.json")
+        config = {}
         try:
-            with open(file, "r") as fp:
+            with settings.open() as fp:
                 config = json.load(fp)
-            return config
-        except Exception as e:
-            print(f"Using default config - Couldn't load from file: {e}")
-            return config
+        except Exception:
+            logging.exception("Using default config - Couldn't load from file")
+        return config
 
-    def getConfig(self):
+    def getConfig(self) -> dict:
         config = self.loadConfig()
         t1 = 8 * 60 + 15
         t2 = 5 * 60 + 30
