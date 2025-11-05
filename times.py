@@ -35,12 +35,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setWindowTitle(f"Times {version}")
         self.setMinimumWidth(500)
 
-        topLine = QtWidgets.QGroupBox()
-        topLineLayout = QtWidgets.QGridLayout()
-        self.createTopLine(topLineLayout)
-        topLine.setLayout(topLineLayout)
-        topLine.setFixedHeight(40)
-
         mainWidget = QtWidgets.QGroupBox()
         mainWidgetLayout = QtWidgets.QGridLayout()
         self.dateButtons = []
@@ -60,17 +54,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setStyleSheet("QPushButton:checked {background-color: LightGreen;}")
         mainWidget.setLayout(mainWidgetLayout)
 
-        scrollArea = QtWidgets.QScrollArea()
-        scrollArea.setWidget(mainWidget)
-        scrollArea.setWidgetResizable(True)
-        scrollArea.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        scrollArea.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
-        scrollArea.setSizeAdjustPolicy(QtWidgets.QAbstractScrollArea.AdjustToContents)
-        scrollArea.ensureWidgetVisible(self.dateButtons[self.datetime.date().day() - 1], 200, 200)
-
         vSplitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
-        vSplitter.addWidget(topLine)
-        vSplitter.addWidget(scrollArea)
+        vSplitter.addWidget(self.createTopLine())
+        vSplitter.addWidget(self.createScrollArea(mainWidget))
         vSplitter.setChildrenCollapsible(False)
         vSplitter.handle(1).setCursor(QtCore.Qt.ArrowCursor)
 
@@ -83,6 +69,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.hSplitter = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
         self.hSplitter.addWidget(vSplitter)
+        self.hSplitter.setChildrenCollapsible(False)
         wpl = self.config["wpLocation"]
         if wpl < 2:  # noqa: PLR2004  - could be fixed at some point by making it an enum...
             self.hSplitter.insertWidget(wpl, self.workPackageView)
@@ -99,7 +86,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.trayIcon = None
             self.createTray()
 
-        self.scroll = scrollArea
         self.updateDateLabels()
         self.resize(QtCore.QSize(mainWidget.sizeHint().width() + 20, self.size().height() + 50))
 
@@ -108,8 +94,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.timer.timeout.connect(self.cyclicFunction)
         self.timer.start(1000)
 
-    def createTopLine(self, layout: QtWidgets.QGridLayout) -> None:
+    def createTopLine(self) -> QtWidgets.QGroupBox:
         """Create the top line with controls."""
+        topLine = QtWidgets.QGroupBox()
+        layout = QtWidgets.QGridLayout()
+
         self.datetime = QtWidgets.QDateTimeEdit(QtCore.QDate.currentDate())
         self.datetime.setDisplayFormat("MMMM yyyy")
         self.datetime.dateChanged.connect(self.onMonthChanged)
@@ -133,6 +122,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.workpackagesButton.setCheckable(True)
         self.workpackagesButton.clicked.connect(self.openWorkPackageView)
         layout.addWidget(self.workpackagesButton, 0, 10)
+        topLine.setLayout(layout)
+        topLine.setFixedHeight(40)
+        return topLine
 
     def createDayWidgets(self, day: int, layout: QtWidgets.QGridLayout) -> None:
         """Create widgets for the day of the month."""
@@ -196,6 +188,16 @@ class MainWindow(QtWidgets.QMainWindow):
         HOCheckBox.clicked.connect(self.updateonSitePercentage)
         self.HOCheckBoxes.append(HOCheckBox)
         layout.addWidget(HOCheckBox, day, 10)
+
+    def createScrollArea(self, widget: QtWidgets.Qw) -> QtWidgets.QScrollArea:
+        """Create the scroll area for the main widget."""
+        scrollArea = QtWidgets.QScrollArea()
+        scrollArea.setWidget(widget)
+        scrollArea.setWidgetResizable(True)
+        scrollArea.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scrollArea.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
+        scrollArea.setSizeAdjustPolicy(QtWidgets.QAbstractScrollArea.AdjustToContents)
+        return scrollArea
 
     def cyclicFunction(self) -> None:
         """Update work packages and UI. Saves the workpackage data every 60 calls."""
