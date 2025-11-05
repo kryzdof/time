@@ -37,31 +37,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         topLine = QtWidgets.QGroupBox()
         topLineLayout = QtWidgets.QGridLayout()
-
-        self.datetime = QtWidgets.QDateTimeEdit(QtCore.QDate.currentDate())
-        self.datetime.setDisplayFormat("MMMM yyyy")
-        self.datetime.dateChanged.connect(self.onMonthChanged)
-        topLineLayout.addWidget(self.datetime, 0, 0, 1, 3)
-        self.oldDateTime = self.datetime.date()
-
-        self.onSitePercentage = QtWidgets.QLabel("'HO%")
-        self.onSitePercentage.setToolTip("Display the % of office days in the complete month")
-        topLineLayout.addWidget(self.onSitePercentage, 0, 5)
-
-        self.hoursZA = QtWidgets.QLabel("ZA")
-        self.hoursTotal = QtWidgets.QLabel("Total")
-        topLineLayout.addWidget(self.hoursZA, 0, 7)
-        topLineLayout.addWidget(self.hoursTotal, 0, 8)
-
-        settingsButton = QtWidgets.QPushButton("Settings")
-        settingsButton.clicked.connect(self.onSettingsClicked)
-        topLineLayout.addWidget(settingsButton, 0, 9)
-
-        self.workpackagesButton = QtWidgets.QPushButton("WP")
-        self.workpackagesButton.setCheckable(True)
-        self.workpackagesButton.clicked.connect(self.openWorkPackageView)
-        topLineLayout.addWidget(self.workpackagesButton, 0, 10)
-
+        self.createTopLine(topLineLayout)
         topLine.setLayout(topLineLayout)
         topLine.setFixedHeight(40)
 
@@ -78,66 +54,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.breakCheckBoxes = []
         self.HOCheckBoxes = []
         for days in range(31):
-            dateButton = QtWidgets.QPushButton(str(days))
-            dateButton.clicked.connect(self.openDetailTimesDialog)
-            self.dateButtons.append(dateButton)
-            mainWidgetLayout.addWidget(dateButton, days, 0)
-
-            label = QtWidgets.QLabel(str(days))
-            self.plannedTimeLabels.append(label)
-            mainWidgetLayout.addWidget(label, days, 1)
-
-            starttime = dialogs.AdvancedTimeEdit()
-            starttime.editingFinished.connect(self.updateDateLabels)
-            self.starttimeTime.append(starttime)
-            mainWidgetLayout.addWidget(starttime, days, 2)
-
-            endtime = dialogs.AdvancedTimeEdit()
-            endtime.editingFinished.connect(self.updateDateLabels)
-            self.endtimeTime.append(endtime)
-            mainWidgetLayout.addWidget(endtime, days, 4)
-
-            autoTime = QtWidgets.QPushButton(QtGui.QPixmap(resource_path("time.png")), "")
-            autoTime.setObjectName(str(days))
-            autoTime.setToolTip(
-                "If start time is 00:00, it will set it to the current time\n"
-                "If start time is something different, it will set the end time to the current time"
-            )
-            autoTime.clicked.connect(self.autoUpdateTime)
-            self.autoTimes.append(autoTime)
-            mainWidgetLayout.addWidget(autoTime, days, 5)
-
-            label = QtWidgets.QLabel("")
-            self.diffTimeLabels.append(label)
-            mainWidgetLayout.addWidget(label, days, 6)
-
-            checkbox = dialogs.VacationButton()
-            checkbox.clicked.connect(self.updateDateLabels)
-            self.vacationCheckBoxes.append(checkbox)
-            mainWidgetLayout.addWidget(checkbox, days, 7)
-
-            label = QtWidgets.QLabel("")
-            self.fullTimeLabels.append(label)
-            mainWidgetLayout.addWidget(label, days, 8)
-
-            breakCheckBox = QtWidgets.QPushButton()
-            breakCheckBox.clicked.connect(self.updateDateLabels)
-            breakCheckBox.setCheckable(True)
-            breakCheckBox.setIcon(QtGui.QPixmap(resource_path("lunch.png")))
-            breakCheckBox.setToolTip(
-                "Green if you had lunch - will reduce the worked time on this day by the configured normal lunch break"
-            )
-            self.breakCheckBoxes.append(breakCheckBox)
-            mainWidgetLayout.addWidget(breakCheckBox, days, 9)
-
-            HOCheckBox = QtWidgets.QPushButton()
-            HOCheckBox.setCheckable(True)
-            HOCheckBox.setChecked(True)
-            HOCheckBox.setIcon(QtGui.QPixmap(resource_path("house.png")))
-            HOCheckBox.setToolTip("Green if you worked from home - helps you remember that")
-            HOCheckBox.clicked.connect(self.updateonSitePercentage)
-            self.HOCheckBoxes.append(HOCheckBox)
-            mainWidgetLayout.addWidget(HOCheckBox, days, 10)
+            self.createDayWidgets(days, mainWidgetLayout)
 
         mainWidgetLayout.setRowStretch(31, 100)
         self.setStyleSheet("QPushButton:checked {background-color: LightGreen;}")
@@ -151,16 +68,16 @@ class MainWindow(QtWidgets.QMainWindow):
         scrollArea.setSizeAdjustPolicy(QtWidgets.QAbstractScrollArea.AdjustToContents)
         scrollArea.ensureWidgetVisible(self.dateButtons[self.datetime.date().day() - 1], 200, 200)
 
-        for x in range(30):
-            mainWidget.setTabOrder(self.autoTimes[x], self.autoTimes[x + 1])
-        mainWidget.setTabOrder(self.autoTimes[-1], self.starttimeTime[0])
-        for x in range(30):
-            mainWidget.setTabOrder(self.starttimeTime[x], self.endtimeTime[x])
-            mainWidget.setTabOrder(self.endtimeTime[x], self.starttimeTime[x + 1])
-        mainWidget.setTabOrder(self.starttimeTime[-1], self.endtimeTime[-1])
-        mainWidget.setTabOrder(self.endtimeTime[-1], self.vacationCheckBoxes[0])
-        for x in range(30):
-            mainWidget.setTabOrder(self.vacationCheckBoxes[x], self.vacationCheckBoxes[x + 1])
+        for x in range(31):
+            QtWidgets.QWidget.setTabOrder(self.dateButtons[x], self.starttimeTime[x])
+            QtWidgets.QWidget.setTabOrder(self.starttimeTime[x], self.endtimeTime[x])
+            QtWidgets.QWidget.setTabOrder(self.endtimeTime[x], self.autoTimes[x])
+            QtWidgets.QWidget.setTabOrder(self.autoTimes[x], self.vacationCheckBoxes[x])
+            QtWidgets.QWidget.setTabOrder(self.vacationCheckBoxes[x], self.breakCheckBoxes[x])
+            QtWidgets.QWidget.setTabOrder(self.breakCheckBoxes[x], self.HOCheckBoxes[x])
+            if x + 1 < 31:
+                QtWidgets.QWidget.setTabOrder(self.HOCheckBoxes[x], self.dateButtons[x + 1])
+        # QtWidgets.QWidget.setTabOrder(self.dateButtons[-1], self.dateButtons[0])
 
         vSplitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
         vSplitter.addWidget(topLine)
@@ -195,13 +112,101 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.scroll = scrollArea
         self.updateDateLabels()
-        self.resize(QtCore.QSize(mainWidget.sizeHint().width(), self.size().height() + 50))
+        self.resize(QtCore.QSize(mainWidget.sizeHint().width() + 20, self.size().height() + 50))
 
         self.cyclicCounter = 0
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.cyclicFunction)
         self.timer.start(1000)
-        self.adjustSize()
+
+    def createTopLine(self, layout: QtWidgets.QGridLayout) -> None:
+        """Create the top line with controls."""
+        self.datetime = QtWidgets.QDateTimeEdit(QtCore.QDate.currentDate())
+        self.datetime.setDisplayFormat("MMMM yyyy")
+        self.datetime.dateChanged.connect(self.onMonthChanged)
+        layout.addWidget(self.datetime, 0, 0, 1, 3)
+        self.oldDateTime = self.datetime.date()
+
+        self.onSitePercentage = QtWidgets.QLabel("'HO%")
+        self.onSitePercentage.setToolTip("Display the % of office days in the complete month")
+        layout.addWidget(self.onSitePercentage, 0, 5)
+
+        self.hoursZA = QtWidgets.QLabel("ZA")
+        self.hoursTotal = QtWidgets.QLabel("Total")
+        layout.addWidget(self.hoursZA, 0, 7)
+        layout.addWidget(self.hoursTotal, 0, 8)
+
+        settingsButton = QtWidgets.QPushButton("Settings")
+        settingsButton.clicked.connect(self.onSettingsClicked)
+        layout.addWidget(settingsButton, 0, 9)
+
+        self.workpackagesButton = QtWidgets.QPushButton("WP")
+        self.workpackagesButton.setCheckable(True)
+        self.workpackagesButton.clicked.connect(self.openWorkPackageView)
+        layout.addWidget(self.workpackagesButton, 0, 10)
+
+    def createDayWidgets(self, day: int, layout: QtWidgets.QGridLayout) -> None:
+        """Create widgets for the day of the month."""
+        dateButton = QtWidgets.QPushButton(str(day))
+        dateButton.clicked.connect(self.openDetailTimesDialog)
+        self.dateButtons.append(dateButton)
+        layout.addWidget(dateButton, day, 0)
+
+        label = QtWidgets.QLabel(str(day))
+        self.plannedTimeLabels.append(label)
+        layout.addWidget(label, day, 1)
+
+        starttime = dialogs.AdvancedTimeEdit()
+        starttime.editingFinished.connect(self.updateDateLabels)
+        self.starttimeTime.append(starttime)
+        layout.addWidget(starttime, day, 2)
+
+        endtime = dialogs.AdvancedTimeEdit()
+        endtime.editingFinished.connect(self.updateDateLabels)
+        self.endtimeTime.append(endtime)
+        layout.addWidget(endtime, day, 4)
+
+        autoTime = QtWidgets.QPushButton(QtGui.QPixmap(resource_path("time.png")), "")
+        autoTime.setObjectName(str(day))
+        autoTime.setToolTip(
+            "If start time is 00:00, it will set it to the current time\n"
+            "If start time is something different, it will set the end time to the current time"
+        )
+        autoTime.clicked.connect(self.autoUpdateTime)
+        self.autoTimes.append(autoTime)
+        layout.addWidget(autoTime, day, 5)
+
+        label = QtWidgets.QLabel("")
+        self.diffTimeLabels.append(label)
+        layout.addWidget(label, day, 6)
+
+        checkbox = dialogs.VacationButton()
+        checkbox.clicked.connect(self.updateDateLabels)
+        self.vacationCheckBoxes.append(checkbox)
+        layout.addWidget(checkbox, day, 7)
+
+        label = QtWidgets.QLabel("")
+        self.fullTimeLabels.append(label)
+        layout.addWidget(label, day, 8)
+
+        breakCheckBox = QtWidgets.QPushButton()
+        breakCheckBox.clicked.connect(self.updateDateLabels)
+        breakCheckBox.setCheckable(True)
+        breakCheckBox.setIcon(QtGui.QPixmap(resource_path("lunch.png")))
+        breakCheckBox.setToolTip(
+            "Green if you had lunch - will reduce the worked time on this day by the configured normal lunch break"
+        )
+        self.breakCheckBoxes.append(breakCheckBox)
+        layout.addWidget(breakCheckBox, day, 9)
+
+        HOCheckBox = QtWidgets.QPushButton()
+        HOCheckBox.setCheckable(True)
+        HOCheckBox.setChecked(True)
+        HOCheckBox.setIcon(QtGui.QPixmap(resource_path("house.png")))
+        HOCheckBox.setToolTip("Green if you worked from home - helps you remember that")
+        HOCheckBox.clicked.connect(self.updateonSitePercentage)
+        self.HOCheckBoxes.append(HOCheckBox)
+        layout.addWidget(HOCheckBox, day, 10)
 
     def cyclicFunction(self) -> None:
         """Update work packages and UI. Saves the workpackage data every 60 calls."""
@@ -429,16 +434,16 @@ class MainWindow(QtWidgets.QMainWindow):
         date = self.datetime.date()
         month = date.month()
         year = date.year()
-        today = QtCore.QDate.currentDate()
 
         ZA = 0
-        tH = 0  # total hours worked
-        pTH = 0  # planned total hours this month
+        tH = 0  # total time worked (seconds)
+        pTH = 0  # planned total time this month (seconds)
+
         for x in range(31):
+            self.hideAllDay(x)
             if x < date.daysInMonth():
                 self.dateButtons[x].show()
                 self.plannedTimeLabels[x].show()
-                self.vacationCheckBoxes[x].show()
                 dayOfWeek = QtCore.QDate(year, month, x + 1).dayOfWeek()
                 self.dateButtons[x].setText(f"{dayString[dayOfWeek]} {x + 1}.{month}.{year}")
                 self.plannedTimeLabels[x].setText(hours[dayOfWeek])
@@ -452,6 +457,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     or (self.vacationCheckBoxes[x].isChecked() and self.vacationCheckBoxes[x].isZA)
                 )
                 if calcNeeded:
+                    self.vacationCheckBoxes[x].show()
                     self.starttimeTime[x].show()
                     self.endtimeTime[x].show()
                     self.autoTimes[x].show()
@@ -467,53 +473,52 @@ class MainWindow(QtWidgets.QMainWindow):
                         self.breakCheckBoxes[x].show()
                         self.HOCheckBoxes[x].show()
 
-                    self.addEndTime(x, seconds[dayOfWeek])
-
-                    # calc diff time
-                    newStart = self.starttimeTime[x].time().addSecs(seconds[dayOfWeek])
-                    diff = newStart.secsTo(self.endtimeTime[x].time())
-                    if self.breakCheckBoxes[x].isChecked() and self.endtimeTime[x].time().msecsSinceStartOfDay():
-                        diff -= self.config["lunchBreak"] * 60
-                    if diff < 0:
-                        diffTime = QtCore.QTime(0, 0).addSecs(-diff)
-                        self.diffTimeLabels[x].setText(diffTime.toString("-h:mm"))
-                    elif diff > 0:
-                        diffTime = QtCore.QTime(0, 0).addSecs(diff)
-                        self.diffTimeLabels[x].setText(diffTime.toString("h:mm"))
-                    else:
-                        self.diffTimeLabels[x].hide()
-
-                    if x + 1 <= today.day() or month is not today.month():
-                        ZA += diff
-
-                    # planned total hours per day:
-                    pTH += seconds[dayOfWeek]
-
-                    # worked hours per day:
+                    ZA += self.calcTimes(x, seconds[dayOfWeek])
                     tH += self.workedDayHours(x)
-                else:
-                    self.starttimeTime[x].hide()
-                    self.endtimeTime[x].hide()
-                    self.autoTimes[x].hide()
-                    self.diffTimeLabels[x].hide()
-                    self.fullTimeLabels[x].hide()
-                    self.breakCheckBoxes[x].hide()
-                    self.HOCheckBoxes[x].hide()
-            else:
-                self.dateButtons[x].hide()
-                self.plannedTimeLabels[x].hide()
-                self.starttimeTime[x].hide()
-                self.endtimeTime[x].hide()
-                self.autoTimes[x].hide()
-                self.diffTimeLabels[x].hide()
-                self.vacationCheckBoxes[x].hide()
-                self.fullTimeLabels[x].hide()
-                self.breakCheckBoxes[x].hide()
-                self.HOCheckBoxes[x].hide()
+                    pTH += seconds[dayOfWeek]
+                if self.vacationCheckBoxes[x].isChecked():
+                    self.vacationCheckBoxes[x].show()
 
         self.setZAHours(ZA)
         self.hoursTotal.setText(f"{tH // 3600}:{tH % 3600 // 60:002}/{pTH // 3600}:{pTH % 3600 // 60:002}")
         self.updateonSitePercentage()
+
+    def calcTimes(self, x: int, daySeconds: int) -> int:
+        """Calculate and set the time differences for a specific day."""
+        self.addEndTime(x, daySeconds)
+
+        # calc diff time
+        newStart = self.starttimeTime[x].time().addSecs(daySeconds)
+        diff = newStart.secsTo(self.endtimeTime[x].time())
+        if self.breakCheckBoxes[x].isChecked() and self.endtimeTime[x].time().msecsSinceStartOfDay():
+            diff -= self.config["lunchBreak"] * 60
+        if diff < 0:
+            diffTime = QtCore.QTime(0, 0).addSecs(-diff)
+            self.diffTimeLabels[x].setText(diffTime.toString("-h:mm"))
+        elif diff > 0:
+            diffTime = QtCore.QTime(0, 0).addSecs(diff)
+            self.diffTimeLabels[x].setText(diffTime.toString("h:mm"))
+        else:
+            self.diffTimeLabels[x].hide()
+
+        month = self.datetime.date().month()
+        today = QtCore.QDate.currentDate()
+        if x + 1 <= today.day() or month is not today.month():
+            return diff
+        return 0
+
+    def hideAllDay(self, x: int) -> None:
+        """Hide all widgets for a specific day."""
+        self.dateButtons[x].hide()
+        self.plannedTimeLabels[x].hide()
+        self.starttimeTime[x].hide()
+        self.endtimeTime[x].hide()
+        self.autoTimes[x].hide()
+        self.diffTimeLabels[x].hide()
+        self.vacationCheckBoxes[x].hide()
+        self.fullTimeLabels[x].hide()
+        self.breakCheckBoxes[x].hide()
+        self.HOCheckBoxes[x].hide()
 
     def updateonSitePercentage(self) -> None:
         """Calculate and update the on-site work percentage."""
@@ -531,6 +536,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.onSitePercentage.setStyleSheet("color: red")
             else:
                 self.onSitePercentage.setStyleSheet("")
+                self.onSitePercentage.setStyle(None)
 
     def detailInputs(self, index: int) -> None:
         """Enable/disable inputs based on stored timestamps."""

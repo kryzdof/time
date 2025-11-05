@@ -255,7 +255,7 @@ class DetailTimesDialog(QtWidgets.QDialog):
 
 
 class SettingsDialog(QtWidgets.QDialog):
-    def __init__(self, parent: QtWidgets.QWidget | None) -> None:  # noqa: PLR0915
+    def __init__(self, parent: QtWidgets.QWidget | None) -> None:
         super().__init__(parent=parent)
 
         self.config = self.getConfig()
