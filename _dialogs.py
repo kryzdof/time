@@ -105,7 +105,7 @@ class AdvancedSpinBox(QtWidgets.QSpinBox):
 
 
 class DetailTimesDialog(QtWidgets.QDialog):
-    def __init__(  # noqa: PLR0915
+    def __init__(
         self,
         parent: QtWidgets.QWidget | None,
         title: str,
@@ -364,34 +364,34 @@ class SettingsDialog(QtWidgets.QDialog):
         JiraSettingsLayout = QtWidgets.QGridLayout()
         JiraSettingsWidgets = QtWidgets.QGroupBox("Jira Settings")
 
-        self.jiraUrlLabel = QtWidgets.QLabel("Jira URL")
+        jiraUrlLabel = QtWidgets.QLabel("Jira URL")  # why self?
         self.jiraUrlLE = QtWidgets.QLineEdit(self.config["url"])
-        self.uidLabel = QtWidgets.QLabel("User ID")
+        uidLabel = QtWidgets.QLabel("User ID")  # why self?
         self.uidLE = QtWidgets.QLineEdit(self.config["uid"])
-        self.passwordLabel = QtWidgets.QLabel("Password")
+        passwordLabel = QtWidgets.QLabel("Password")
         self.passwordLE = QtWidgets.QLineEdit(keyring.get_password("jiraconnection", self.config["uid"]))
         self.passwordLE.setEchoMode(QtWidgets.QLineEdit.Password)
-        self.jiraVerifyButton = QtWidgets.QPushButton("Verify")
-        self.jiraVerifyButton.clicked.connect(self.verifyJira)
-        JiraSettingsLayout.addWidget(self.jiraUrlLabel, 0, 0)
+        jiraVerifyButton = QtWidgets.QPushButton("Verify")
+        jiraVerifyButton.clicked.connect(self.verifyJira)
+        JiraSettingsLayout.addWidget(jiraUrlLabel, 0, 0)
         JiraSettingsLayout.addWidget(self.jiraUrlLE, 0, 1, 1, 2)
-        JiraSettingsLayout.addWidget(self.uidLabel, 1, 0)
+        JiraSettingsLayout.addWidget(uidLabel, 1, 0)
         JiraSettingsLayout.addWidget(self.uidLE, 1, 1, 1, 2)
-        JiraSettingsLayout.addWidget(self.passwordLabel, 2, 0)
+        JiraSettingsLayout.addWidget(passwordLabel, 2, 0)
         JiraSettingsLayout.addWidget(self.passwordLE, 2, 1, 1, 2)
-        JiraSettingsLayout.addWidget(self.jiraVerifyButton, 3, 2)
+        JiraSettingsLayout.addWidget(jiraVerifyButton, 3, 2)
 
         JiraSettingsWidgets.setLayout(JiraSettingsLayout)
 
         workPackageLayout = QtWidgets.QGridLayout()
         workPackageLocationWidgets = QtWidgets.QGroupBox("WorkPackage Settings")
-        self.workPackageLocationLabel = QtWidgets.QLabel("Workpackage Location:")
+        workPackageLocationLabel = QtWidgets.QLabel("Workpackage Location:")
         self.workPackageLocationCombo = QtWidgets.QComboBox()
         self.workPackageLocationCombo.insertItems(0, ["left", "right", "popup"])
         self.workPackageLocationCombo.setCurrentIndex(self.config["wpLocation"])
         self.workPackageOnStartUpActive = QtWidgets.QCheckBox("Show Work Packages on Start")
         self.workPackageOnStartUpActive.setChecked(self.config["wpActive"])
-        workPackageLayout.addWidget(self.workPackageLocationLabel, 0, 0)
+        workPackageLayout.addWidget(workPackageLocationLabel, 0, 0)
         workPackageLayout.addWidget(self.workPackageLocationCombo, 0, 1)
         workPackageLayout.addWidget(self.workPackageOnStartUpActive, 1, 0, 1, 2)
         workPackageLocationWidgets.setLayout(workPackageLayout)
