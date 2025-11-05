@@ -68,17 +68,6 @@ class MainWindow(QtWidgets.QMainWindow):
         scrollArea.setSizeAdjustPolicy(QtWidgets.QAbstractScrollArea.AdjustToContents)
         scrollArea.ensureWidgetVisible(self.dateButtons[self.datetime.date().day() - 1], 200, 200)
 
-        for x in range(31):
-            QtWidgets.QWidget.setTabOrder(self.dateButtons[x], self.starttimeTime[x])
-            QtWidgets.QWidget.setTabOrder(self.starttimeTime[x], self.endtimeTime[x])
-            QtWidgets.QWidget.setTabOrder(self.endtimeTime[x], self.autoTimes[x])
-            QtWidgets.QWidget.setTabOrder(self.autoTimes[x], self.vacationCheckBoxes[x])
-            QtWidgets.QWidget.setTabOrder(self.vacationCheckBoxes[x], self.breakCheckBoxes[x])
-            QtWidgets.QWidget.setTabOrder(self.breakCheckBoxes[x], self.HOCheckBoxes[x])
-            if x + 1 < 31:
-                QtWidgets.QWidget.setTabOrder(self.HOCheckBoxes[x], self.dateButtons[x + 1])
-        # QtWidgets.QWidget.setTabOrder(self.dateButtons[-1], self.dateButtons[0])
-
         vSplitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
         vSplitter.addWidget(topLine)
         vSplitter.addWidget(scrollArea)
@@ -440,7 +429,6 @@ class MainWindow(QtWidgets.QMainWindow):
         pTH = 0  # planned total time this month (seconds)
 
         for x in range(31):
-            self.hideAllDay(x)
             if x < date.daysInMonth():
                 self.dateButtons[x].show()
                 self.plannedTimeLabels[x].show()
@@ -463,10 +451,10 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.autoTimes[x].show()
                     self.diffTimeLabels[x].show()
                     self.fullTimeLabels[x].show()
-                    if self.vacationCheckBoxes[x].isChecked() and self.vacationCheckBoxes[x].isZA:
-                        self.starttimeTime[x].setEnabled(False)
-                        self.endtimeTime[x].setEnabled(False)
-                        self.autoTimes[x].setEnabled(False)
+                    self.starttimeTime[x].setEnabled(not self.vacationCheckBoxes[x].isZA)
+                    self.endtimeTime[x].setEnabled(not self.vacationCheckBoxes[x].isZA)
+                    self.autoTimes[x].setEnabled(not self.vacationCheckBoxes[x].isZA)
+                    if self.vacationCheckBoxes[x].isZA:
                         self.breakCheckBoxes[x].hide()
                         self.HOCheckBoxes[x].hide()
                     else:
@@ -476,9 +464,10 @@ class MainWindow(QtWidgets.QMainWindow):
                     ZA += self.calcTimes(x, seconds[dayOfWeek])
                     tH += self.workedDayHours(x)
                     pTH += seconds[dayOfWeek]
-                if self.vacationCheckBoxes[x].isChecked():
-                    self.vacationCheckBoxes[x].show()
-
+                else:
+                    self.hideMostDay(x)
+            else:
+                self.hideAllDay(x)
         self.setZAHours(ZA)
         self.hoursTotal.setText(f"{tH // 3600}:{tH % 3600 // 60:002}/{pTH // 3600}:{pTH % 3600 // 60:002}")
         self.updateonSitePercentage()
@@ -506,6 +495,16 @@ class MainWindow(QtWidgets.QMainWindow):
         if x + 1 <= today.day() or month is not today.month():
             return diff
         return 0
+
+    def hideMostDay(self, x: int) -> None:
+        """Hide most widgets for a specific day, keeping date and planned time visible."""
+        self.starttimeTime[x].hide()
+        self.endtimeTime[x].hide()
+        self.autoTimes[x].hide()
+        self.diffTimeLabels[x].hide()
+        self.fullTimeLabels[x].hide()
+        self.breakCheckBoxes[x].hide()
+        self.HOCheckBoxes[x].hide()
 
     def hideAllDay(self, x: int) -> None:
         """Hide all widgets for a specific day."""
