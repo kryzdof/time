@@ -262,152 +262,186 @@ class SettingsDialog(QtWidgets.QDialog):
         self.setWindowTitle("Settings")
         mainLayout = QtWidgets.QGridLayout()
 
-        timeSettingsLayout = QtWidgets.QGridLayout()
-        timeSettingsWidgets = QtWidgets.QGroupBox("Time Settings")
-        _timeSettingsWidgetsText = "Guess what! That are the daily working hours you think you should be working :)"
-        timeSettingsWidgets.setToolTip(_timeSettingsWidgetsText)
-        timeSettingsWidgets.setWhatsThis(_timeSettingsWidgetsText)
-        for x, dayStr in enumerate(calendar.day_name):
-            label = QtWidgets.QLabel(dayStr)
-            timeSettingsLayout.addWidget(label, x + 1, 0)
-        self.workingTimes = []
-        for x in range(1, 8):
-            t = self.config["hours"][x]
-            workingTime = AdvancedTimeEdit(t)
-            self.workingTimes.append(workingTime)
-            timeSettingsLayout.addWidget(workingTime, x, 1)
-        timeSettingsWidgets.setLayout(timeSettingsLayout)
+        timeSettingsWidget, self.workingTimes = self.createTimeSettingsWidget()
 
-        lunchSettingsLayout = QtWidgets.QGridLayout()
-        lunchSettingsWidgets = QtWidgets.QGroupBox("Lunch Settings")
-        _lunchSettingsWidgetsText = "This time will be reduced from your working hours if the lunch break checkbox is set"
-        lunchSettingsWidgets.setToolTip(_lunchSettingsWidgetsText)
-        lunchSettingsWidgets.setWhatsThis(_lunchSettingsWidgetsText)
-        label = QtWidgets.QLabel("Normal Lunch Break")
-        lunchSettingsLayout.addWidget(label, 0, 0)
-        self.lunchTime = AdvancedTimeEdit(QtCore.QTime(0, 0).addSecs(self.config["lunchBreak"] * 60))
-        lunchSettingsLayout.addWidget(self.lunchTime, 0, 1)
-        lunchSettingsWidgets.setLayout(lunchSettingsLayout)
+        lunchSettingsWidget, self.lunchTime = self.createLunchSettingsWidget()
 
-        generalSettingsLayout = QtWidgets.QGridLayout()
-        generalSettingsWidgets = QtWidgets.QGroupBox("General Settings")
-        self.autoCalcEndTime = QtWidgets.QCheckBox("Forecast end time")
-        self.autoCalcEndTime.setChecked(self.config["forecastEndTimes"])
-        _autoCalcEndTimeText = (
-            "This will automatically calculate the end time of the day according to the supposed working hours for this day"
+        generalSettingsWidget, self.autoCalcEndTime, self.hourWrapAround, self.minimize = self.createGeneralSettingsWidget()
+
+        homeOfficeSettingsWidget, self.officePercentage, self.dailyOfficePercentageCheckBox, self.dailyOfficePercentage = (
+            self.createHomeOfficeSettingsWidget()
         )
-        self.autoCalcEndTime.setToolTip(_autoCalcEndTimeText)
-        self.autoCalcEndTime.setWhatsThis(_autoCalcEndTimeText)
 
-        self.hourWrapAround = QtWidgets.QCheckBox("Wrap hours")
-        self.hourWrapAround.setChecked(self.config["connectHoursAndMinutes"])
-        _hourWrapAroundText = "If minutes wrap around, the hour will also be changed"
-        self.hourWrapAround.setToolTip(_hourWrapAroundText)
-        self.hourWrapAround.setWhatsThis(_hourWrapAroundText)
-
-        self.minimize = QtWidgets.QCheckBox("Quit to Tray")
-        self.minimize.setChecked(self.config["minimize"])
-        _minimizeText = "Minimize to tray instead of closing"
-        self.minimize.setToolTip(_minimizeText)
-        self.minimize.setWhatsThis(_minimizeText)
-
-        generalSettingsLayout.addWidget(self.autoCalcEndTime, 0, 0)
-        generalSettingsLayout.addWidget(self.hourWrapAround, 1, 0)
-        generalSettingsLayout.addWidget(self.minimize, 2, 0)
-
-        generalSettingsWidgets.setLayout(generalSettingsLayout)
-
-        homeOfficeSettingsLayout = QtWidgets.QGridLayout()
-        homeOfficeSettingsWidgets = QtWidgets.QGroupBox("Home Office Settings")
-
-        MonthlyLabel = QtWidgets.QLabel("Monthly office % threshold")
-        self.officePercentage = QtWidgets.QSpinBox(self)
-        self.officePercentage.setRange(0, 100)
-        self.officePercentage.setValue(self.config["officePercentage"])
-        _officePercentageText = "The office percentage will turn red if below this value"
-        self.officePercentage.setToolTip(_officePercentageText)
-        self.officePercentage.setWhatsThis(_officePercentageText)
-        MonthlyLabel.setToolTip(_officePercentageText)
-        MonthlyLabel.setWhatsThis(_officePercentageText)
-
-        DailyLabel = QtWidgets.QLabel("Daily office % threshold")
-        self.dailyOfficePercentageCheckBox = QtWidgets.QCheckBox()
-        self.dailyOfficePercentageCheckBox.setChecked(self.config["dailyOfficePercentageAutoCalc"])
-        self.dailyOfficePercentage = QtWidgets.QSpinBox(self)
-        self.dailyOfficePercentage.setRange(0, 100)
-        self.dailyOfficePercentage.setValue(self.config["dailyOfficePercentage"])
-        self.dailyOfficePercentage.setDisabled(not self.config["dailyOfficePercentageAutoCalc"])
-        self.dailyOfficePercentageCheckBox.toggled.connect(self.dailyOfficePercentageSetDisabled)
-
-        _dailyOfficePercentageText = (
-            "Office percentage on a daily basis.\n"
-            "If enabled the daily time details are triggering an update on save.\n"
-            "If the percentage of office time on that day is higher, "
-            "the threshold it is considered an office day.\n"
-            "Any non-home-office time is considered office."
+        workPackageWidget, self.workPackageLocationCombo, self.workPackageOnStartUpActive = (
+            self.createWorkPackageSettingsWidget()
         )
-        self.dailyOfficePercentage.setToolTip(_dailyOfficePercentageText)
-        self.dailyOfficePercentage.setWhatsThis(_dailyOfficePercentageText)
-        self.dailyOfficePercentageCheckBox.setWhatsThis(_dailyOfficePercentageText)
-        self.dailyOfficePercentageCheckBox.setWhatsThis(_dailyOfficePercentageText)
-        DailyLabel.setToolTip(_dailyOfficePercentageText)
-        DailyLabel.setWhatsThis(_dailyOfficePercentageText)
 
-        homeOfficeSettingsLayout.addWidget(MonthlyLabel, 0, 0)
-        homeOfficeSettingsLayout.addWidget(self.officePercentage, 0, 2)
-        homeOfficeSettingsLayout.addWidget(DailyLabel, 1, 0)
-        homeOfficeSettingsLayout.addWidget(self.dailyOfficePercentageCheckBox, 1, 1)
-        homeOfficeSettingsLayout.addWidget(self.dailyOfficePercentage, 1, 2)
-
-        homeOfficeSettingsWidgets.setLayout(homeOfficeSettingsLayout)
-
-        JiraSettingsLayout = QtWidgets.QGridLayout()
-        JiraSettingsWidgets = QtWidgets.QGroupBox("Jira Settings")
-
-        jiraUrlLabel = QtWidgets.QLabel("Jira URL")  # why self?
-        self.jiraUrlLE = QtWidgets.QLineEdit(self.config["url"])
-        uidLabel = QtWidgets.QLabel("User ID")  # why self?
-        self.uidLE = QtWidgets.QLineEdit(self.config["uid"])
-        passwordLabel = QtWidgets.QLabel("Password")
-        self.passwordLE = QtWidgets.QLineEdit(keyring.get_password("jiraconnection", self.config["uid"]))
-        self.passwordLE.setEchoMode(QtWidgets.QLineEdit.Password)
-        jiraVerifyButton = QtWidgets.QPushButton("Verify")
-        jiraVerifyButton.clicked.connect(self.verifyJira)
-        JiraSettingsLayout.addWidget(jiraUrlLabel, 0, 0)
-        JiraSettingsLayout.addWidget(self.jiraUrlLE, 0, 1, 1, 2)
-        JiraSettingsLayout.addWidget(uidLabel, 1, 0)
-        JiraSettingsLayout.addWidget(self.uidLE, 1, 1, 1, 2)
-        JiraSettingsLayout.addWidget(passwordLabel, 2, 0)
-        JiraSettingsLayout.addWidget(self.passwordLE, 2, 1, 1, 2)
-        JiraSettingsLayout.addWidget(jiraVerifyButton, 3, 2)
-
-        JiraSettingsWidgets.setLayout(JiraSettingsLayout)
-
-        workPackageLayout = QtWidgets.QGridLayout()
-        workPackageLocationWidgets = QtWidgets.QGroupBox("WorkPackage Settings")
-        workPackageLocationLabel = QtWidgets.QLabel("Workpackage Location:")
-        self.workPackageLocationCombo = QtWidgets.QComboBox()
-        self.workPackageLocationCombo.insertItems(0, ["left", "right", "popup"])
-        self.workPackageLocationCombo.setCurrentIndex(self.config["wpLocation"])
-        self.workPackageOnStartUpActive = QtWidgets.QCheckBox("Show Work Packages on Start")
-        self.workPackageOnStartUpActive.setChecked(self.config["wpActive"])
-        workPackageLayout.addWidget(workPackageLocationLabel, 0, 0)
-        workPackageLayout.addWidget(self.workPackageLocationCombo, 0, 1)
-        workPackageLayout.addWidget(self.workPackageOnStartUpActive, 1, 0, 1, 2)
-        workPackageLocationWidgets.setLayout(workPackageLayout)
+        JiraSettingsWidget, self.jiraUrlLE, self.uidLE, self.passwordLE = self.createJiraSettingsWidget()
 
         buttonbox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
         buttonbox.accepted.connect(self.accept)
         buttonbox.rejected.connect(self.reject)
 
-        mainLayout.addWidget(timeSettingsWidgets, 0, 0, 2, 1)
-        mainLayout.addWidget(lunchSettingsWidgets, 0, 1)
-        mainLayout.addWidget(generalSettingsWidgets, 1, 1)
-        mainLayout.addWidget(homeOfficeSettingsWidgets, 2, 0, 1, 2)
-        mainLayout.addWidget(workPackageLocationWidgets, 3, 0, 1, 2)
-        mainLayout.addWidget(JiraSettingsWidgets, 4, 0, 1, 2)
+        mainLayout.addWidget(timeSettingsWidget, 0, 0, 2, 1)
+        mainLayout.addWidget(lunchSettingsWidget, 0, 1)
+        mainLayout.addWidget(generalSettingsWidget, 1, 1)
+        mainLayout.addWidget(homeOfficeSettingsWidget, 2, 0, 1, 2)
+        mainLayout.addWidget(workPackageWidget, 3, 0, 1, 2)
+        mainLayout.addWidget(JiraSettingsWidget, 4, 0, 1, 2)
         mainLayout.addWidget(buttonbox)
         self.setLayout(mainLayout)
+
+    def createTimeSettingsWidget(self) -> (QtWidgets.QGroupBox, list[AdvancedTimeEdit]):
+        """Create the time settings widget."""
+        timeSettingsLayout = QtWidgets.QGridLayout()
+        timeSettingsWidget = QtWidgets.QGroupBox("Time Settings")
+        timeSettingsWidgetsText = "Guess what! That are the daily working hours you think you should be working :)"
+        timeSettingsWidget.setToolTip(timeSettingsWidgetsText)
+        timeSettingsWidget.setWhatsThis(timeSettingsWidgetsText)
+        for x, dayStr in enumerate(calendar.day_name):
+            label = QtWidgets.QLabel(dayStr)
+            timeSettingsLayout.addWidget(label, x + 1, 0)
+        workingTimes = []
+        for x in range(1, 8):
+            t = self.config["hours"][x]
+            workingTime = AdvancedTimeEdit(t)
+            workingTimes.append(workingTime)
+            timeSettingsLayout.addWidget(workingTime, x, 1)
+        timeSettingsWidget.setLayout(timeSettingsLayout)
+        return timeSettingsWidget, workingTimes
+
+    def createLunchSettingsWidget(self) -> (QtWidgets.QGroupBox, AdvancedTimeEdit):
+        """Create the lunch settings widget."""
+        lunchSettingsLayout = QtWidgets.QGridLayout()
+        lunchSettingsWidgets = QtWidgets.QGroupBox("Lunch Settings")
+        lunchSettingsWidgetsText = "This time will be reduced from your working hours if the lunch break checkbox is set"
+        lunchSettingsWidgets.setToolTip(lunchSettingsWidgetsText)
+        lunchSettingsWidgets.setWhatsThis(lunchSettingsWidgetsText)
+        label = QtWidgets.QLabel("Normal Lunch Break")
+        lunchSettingsLayout.addWidget(label, 0, 0)
+        lunchTime = AdvancedTimeEdit(QtCore.QTime(0, 0).addSecs(self.config["lunchBreak"] * 60))
+        lunchSettingsLayout.addWidget(lunchTime, 0, 1)
+        lunchSettingsWidgets.setLayout(lunchSettingsLayout)
+        return lunchSettingsWidgets, lunchTime
+
+    def createGeneralSettingsWidget(
+        self,
+    ) -> (QtWidgets.QGroupBox, QtWidgets.QCheckBox, QtWidgets.QCheckBox, QtWidgets.QCheckBox):
+        """Create the general settings widget."""
+        generalSettingsLayout = QtWidgets.QGridLayout()
+        generalSettingsWidget = QtWidgets.QGroupBox("General Settings")
+        autoCalcEndTime = QtWidgets.QCheckBox("Forecast end time")
+        autoCalcEndTime.setChecked(self.config["forecastEndTimes"])
+        autoCalcEndTimeText = (
+            "This will automatically calculate the end time of the day according to the supposed working hours for this day"
+        )
+        autoCalcEndTime.setToolTip(autoCalcEndTimeText)
+        autoCalcEndTime.setWhatsThis(autoCalcEndTimeText)
+
+        hourWrapAround = QtWidgets.QCheckBox("Wrap hours")
+        hourWrapAround.setChecked(self.config["connectHoursAndMinutes"])
+        hourWrapAroundText = "If minutes wrap around, the hour will also be changed"
+        hourWrapAround.setToolTip(hourWrapAroundText)
+        hourWrapAround.setWhatsThis(hourWrapAroundText)
+
+        minimize = QtWidgets.QCheckBox("Quit to Tray")
+        minimize.setChecked(self.config["minimize"])
+        minimizeText = "Minimize to tray instead of closing"
+        minimize.setToolTip(minimizeText)
+        minimize.setWhatsThis(minimizeText)
+
+        generalSettingsLayout.addWidget(autoCalcEndTime, 0, 0)
+        generalSettingsLayout.addWidget(hourWrapAround, 1, 0)
+        generalSettingsLayout.addWidget(minimize, 2, 0)
+
+        generalSettingsWidget.setLayout(generalSettingsLayout)
+        return generalSettingsWidget, autoCalcEndTime, hourWrapAround, minimize
+
+    def createHomeOfficeSettingsWidget(
+        self,
+    ) -> (QtWidgets.QGroupBox, QtWidgets.QSpinBox, QtWidgets.QCheckBox, QtWidgets.QSpinBox):
+        """Create the home office settings widget."""
+        homeOfficeSettingsLayout = QtWidgets.QGridLayout()
+        homeOfficeSettingsWidget = QtWidgets.QGroupBox("Home Office Settings")
+
+        officePercentage = QtWidgets.QSpinBox(self)
+        officePercentage.setRange(0, 100)
+        officePercentage.setValue(self.config["officePercentage"])
+        officePercentageText = "The office percentage will turn red if below this value"
+        officePercentage.setToolTip(officePercentageText)
+        officePercentage.setWhatsThis(officePercentageText)
+        monthlyLabel = QtWidgets.QLabel("Monthly office % threshold")
+        monthlyLabel.setToolTip(officePercentageText)
+        monthlyLabel.setWhatsThis(officePercentageText)
+
+        dailyOfficePercentageCheckBox = QtWidgets.QCheckBox("Daily office % threshold")
+        dailyOfficePercentageCheckBox.setChecked(self.config["dailyOfficePercentageAutoCalc"])
+        dailyOfficePercentageCheckBox.toggled.connect(self.dailyOfficePercentageSetDisabled)
+        dailyOfficePercentageText = (
+            "Office percentage on a daily basis.\n"
+            "If enabled the daily time details are triggering an update on save.\n"
+            "If the percentage of office time on that day is higher then the theshold, "
+            "it is considered an office day.\n"
+            "Any non-home-office time is considered office."
+        )
+        dailyOfficePercentageCheckBox.setWhatsThis(dailyOfficePercentageText)
+        dailyOfficePercentageCheckBox.setWhatsThis(dailyOfficePercentageText)
+        dailyOfficePercentage = QtWidgets.QSpinBox(self)
+        dailyOfficePercentage.setRange(0, 100)
+        dailyOfficePercentage.setValue(self.config["dailyOfficePercentage"])
+        dailyOfficePercentage.setDisabled(not self.config["dailyOfficePercentageAutoCalc"])
+        dailyOfficePercentage.setToolTip(dailyOfficePercentageText)
+        dailyOfficePercentage.setWhatsThis(dailyOfficePercentageText)
+
+        homeOfficeSettingsLayout.addWidget(monthlyLabel, 0, 0)
+        homeOfficeSettingsLayout.addWidget(officePercentage, 0, 1)
+        homeOfficeSettingsLayout.addWidget(dailyOfficePercentageCheckBox, 1, 0)
+        homeOfficeSettingsLayout.addWidget(dailyOfficePercentage, 1, 1)
+
+        homeOfficeSettingsWidget.setLayout(homeOfficeSettingsLayout)
+        return homeOfficeSettingsWidget, officePercentage, dailyOfficePercentageCheckBox, dailyOfficePercentage
+
+    def createWorkPackageSettingsWidget(self) -> (QtWidgets.QGroupBox, QtWidgets.QComboBox, QtWidgets.QCheckBox):
+        """Create the work package settings widget."""
+        workPackageLayout = QtWidgets.QGridLayout()
+        workPackageSettingsWidget = QtWidgets.QGroupBox("WorkPackage Settings")
+        workPackageLocationLabel = QtWidgets.QLabel("Workpackage Location:")
+        workPackageLocationCombo = QtWidgets.QComboBox()
+        workPackageLocationCombo.insertItems(0, ["left", "right", "popup"])
+        workPackageLocationCombo.setCurrentIndex(self.config["wpLocation"])
+        workPackageOnStartUpActive = QtWidgets.QCheckBox("Show Work Packages on Start")
+        workPackageOnStartUpActive.setChecked(self.config["wpActive"])
+
+        workPackageLayout.addWidget(workPackageLocationLabel, 0, 0)
+        workPackageLayout.addWidget(workPackageLocationCombo, 0, 1)
+        workPackageLayout.addWidget(workPackageOnStartUpActive, 1, 0, 1, 2)
+        workPackageSettingsWidget.setLayout(workPackageLayout)
+
+        return workPackageSettingsWidget, workPackageLocationCombo, workPackageOnStartUpActive
+
+    def createJiraSettingsWidget(self) -> (QtWidgets.QGroupBox, QtWidgets.QLineEdit, QtWidgets.QLineEdit, QtWidgets.QLineEdit):
+        JiraSettingsLayout = QtWidgets.QGridLayout()
+        JiraSettingsWidget = QtWidgets.QGroupBox("Jira Settings")
+
+        jiraUrlLabel = QtWidgets.QLabel("Jira URL")
+        jiraUrlLE = QtWidgets.QLineEdit(self.config["url"])
+        uidLabel = QtWidgets.QLabel("User ID")
+        uidLE = QtWidgets.QLineEdit(self.config["uid"])
+        passwordLabel = QtWidgets.QLabel("Password")
+        passwordLE = QtWidgets.QLineEdit(keyring.get_password("jiraconnection", self.config["uid"]))
+        passwordLE.setEchoMode(QtWidgets.QLineEdit.Password)
+        jiraVerifyButton = QtWidgets.QPushButton("Verify")
+        jiraVerifyButton.clicked.connect(self.verifyJira)
+        JiraSettingsLayout.addWidget(jiraUrlLabel, 0, 0)
+        JiraSettingsLayout.addWidget(jiraUrlLE, 0, 1, 1, 2)
+        JiraSettingsLayout.addWidget(uidLabel, 1, 0)
+        JiraSettingsLayout.addWidget(uidLE, 1, 1, 1, 2)
+        JiraSettingsLayout.addWidget(passwordLabel, 2, 0)
+        JiraSettingsLayout.addWidget(passwordLE, 2, 1, 1, 2)
+        JiraSettingsLayout.addWidget(jiraVerifyButton, 3, 2)
+
+        JiraSettingsWidget.setLayout(JiraSettingsLayout)
+        return JiraSettingsWidget, jiraUrlLE, uidLE, passwordLE
 
     def dailyOfficePercentageSetDisabled(self, checked: bool) -> None:
         self.dailyOfficePercentage.setDisabled(not checked)
