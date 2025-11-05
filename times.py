@@ -35,8 +35,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setWindowTitle(f"Times {version}")
         self.setMinimumWidth(500)
 
-        mainWidget = QtWidgets.QGroupBox()
-        mainWidgetLayout = QtWidgets.QGridLayout()
         self.dateButtons = []
         self.plannedTimeLabels = []
         self.starttimeTime = []
@@ -47,12 +45,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.fullTimeLabels = []
         self.breakCheckBoxes = []
         self.HOCheckBoxes = []
-        for days in range(31):
-            self.createDayWidgets(days, mainWidgetLayout)
 
-        mainWidgetLayout.setRowStretch(31, 100)
-        self.setStyleSheet("QPushButton:checked {background-color: LightGreen;}")
-        mainWidget.setLayout(mainWidgetLayout)
+        mainWidget = self.createMainWidget()
 
         vSplitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
         vSplitter.addWidget(self.createTopLine())
@@ -188,6 +182,18 @@ class MainWindow(QtWidgets.QMainWindow):
         HOCheckBox.clicked.connect(self.updateonSitePercentage)
         self.HOCheckBoxes.append(HOCheckBox)
         layout.addWidget(HOCheckBox, day, 10)
+
+    def createMainWidget(self) -> QtWidgets.QWidget:
+        """Create the main widget containing all day widgets."""
+        mainWidget = QtWidgets.QGroupBox()
+        mainWidgetLayout = QtWidgets.QGridLayout()
+        for days in range(31):
+            self.createDayWidgets(days, mainWidgetLayout)
+
+        mainWidgetLayout.setRowStretch(31, 100)
+        self.setStyleSheet("QPushButton:checked {background-color: LightGreen;}")
+        mainWidget.setLayout(mainWidgetLayout)
+        return mainWidget
 
     def createScrollArea(self, widget: QtWidgets.Qw) -> QtWidgets.QScrollArea:
         """Create the scroll area for the main widget."""
