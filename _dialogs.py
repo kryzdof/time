@@ -1,6 +1,5 @@
 import calendar
 import json
-import logging
 from itertools import zip_longest
 from pathlib import Path
 
@@ -105,12 +104,7 @@ class AdvancedSpinBox(QtWidgets.QSpinBox):
 
 
 class DetailTimesDialog(QtWidgets.QDialog):
-    def __init__(
-        self,
-        parent: QtWidgets.QWidget | None,
-        title: str,
-        data: list[tuple[int, int, int]],
-    ) -> None:
+    def __init__(self, parent: QtWidgets.QWidget | None, title: str, data: list[tuple[int, int, int]]) -> None:
         super().__init__(parent=parent)
 
         self.timeStampData = data
@@ -138,39 +132,7 @@ class DetailTimesDialog(QtWidgets.QDialog):
         label.setAlignment(QtCore.Qt.AlignHCenter)
         mainLayout.addWidget(label, 0, 5)
 
-        for x, timestamps in zip_longest(range(10), self.timeStampData, fillvalue=(0, 0, 0)):
-            if len(timestamps) == 2:  # noqa: PLR2004
-                start, end, timeType = *timestamps, 0
-            else:
-                start, end, timeType = timestamps
-
-            autoTime = QtWidgets.QPushButton(QtGui.QPixmap(resource_path("time.png")), "")
-            autoTime.clicked.connect(self.updateAutoTime)
-            mainLayout.addWidget(autoTime, x + 1, 0)
-            t = QtCore.QTime(minutesToTime(start))
-            startTimes = AdvancedTimeEdit(t)
-            startTimes.timeChanged.connect(self.updateDiffs)
-            self.startTimes.append(startTimes)
-            mainLayout.addWidget(startTimes, x + 1, 1)
-            autoTime.QTimeReference = startTimes
-
-            t = QtCore.QTime(minutesToTime(end))
-            endTimes = AdvancedTimeEdit(t)
-            endTimes.timeChanged.connect(self.updateDiffs)
-            self.endTimes.append(endTimes)
-            mainLayout.addWidget(endTimes, x + 1, 2)
-            autoTime = QtWidgets.QPushButton(QtGui.QPixmap(resource_path("time.png")), "")
-            autoTime.QTimeReference = endTimes
-            autoTime.clicked.connect(self.updateAutoTime)
-            mainLayout.addWidget(autoTime, x + 1, 3)
-
-            label = QtWidgets.QLabel("")
-            self.timeDuration.append(label)
-            mainLayout.addWidget(label, x + 1, 4)
-
-            timeTypes = TimeTypeButton(timeType)
-            self.timeTypes.append(timeTypes)
-            mainLayout.addWidget(timeTypes, x + 1, 5)
+        self.createTimeEditLines(mainLayout)
 
         label = QtWidgets.QLabel("Total time:")
         mainLayout.addWidget(label, 11, 1)
@@ -192,6 +154,42 @@ class DetailTimesDialog(QtWidgets.QDialog):
         mainLayout.addWidget(buttonbox, 20, 0, 1, 5)
         self.setLayout(mainLayout)
         self.updateDiffs()
+
+    def createTimeEditLines(self, layout: QtWidgets.QGridLayout) -> None:
+        """Create the time edit lines."""
+        for x, timestamps in zip_longest(range(10), self.timeStampData, fillvalue=(0, 0, 0)):
+            if len(timestamps) == 2:  # noqa: PLR2004
+                start, end, timeType = *timestamps, 0
+            else:
+                start, end, timeType = timestamps
+
+            autoTime = QtWidgets.QPushButton(QtGui.QPixmap(resource_path("time.png")), "")
+            autoTime.clicked.connect(self.updateAutoTime)
+            layout.addWidget(autoTime, x + 1, 0)
+            t = QtCore.QTime(minutesToTime(start))
+            startTimes = AdvancedTimeEdit(t)
+            startTimes.timeChanged.connect(self.updateDiffs)
+            self.startTimes.append(startTimes)
+            layout.addWidget(startTimes, x + 1, 1)
+            autoTime.QTimeReference = startTimes
+
+            t = QtCore.QTime(minutesToTime(end))
+            endTimes = AdvancedTimeEdit(t)
+            endTimes.timeChanged.connect(self.updateDiffs)
+            self.endTimes.append(endTimes)
+            layout.addWidget(endTimes, x + 1, 2)
+            autoTime = QtWidgets.QPushButton(QtGui.QPixmap(resource_path("time.png")), "")
+            autoTime.QTimeReference = endTimes
+            autoTime.clicked.connect(self.updateAutoTime)
+            layout.addWidget(autoTime, x + 1, 3)
+
+            label = QtWidgets.QLabel("")
+            self.timeDuration.append(label)
+            layout.addWidget(label, x + 1, 4)
+
+            timeTypes = TimeTypeButton(timeType)
+            self.timeTypes.append(timeTypes)
+            layout.addWidget(timeTypes, x + 1, 5)
 
     def updateAutoTime(self) -> None:
         timeEdit = self.sender().QTimeReference
@@ -503,8 +501,8 @@ class SettingsDialog(QtWidgets.QDialog):
         try:
             with settings.open() as fp:
                 config = json.load(fp)
-        except Exception:
-            logging.exception("Using default config - Couldn't load from file")
+        except Exception as e:
+            print(f"Using default config - Couldn't load from file: {e}")
         return config
 
     def getConfig(self) -> dict:
