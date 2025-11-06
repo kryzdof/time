@@ -18,4 +18,27 @@ dev = [
     "flake8==7.3.0",
     "pytest==8.4.2",
     "pytest-qt==4.5.0",
+    "ruff==0.14.3",
 ]
+
+[tool.ruff]
+line-length = 128
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "N802", "N803", "N806", "N815",  
+      # PEP8 formatting - we stay on mixedCase for now
+    "EM",  
+      # I dont agree with them
+    "TRY003",
+      # generally a good idea but nothing I want to enforce (and in the way in my use case)
+    "BLE001", "T201",
+      # put it back in again later with additional logging
+    "D203", "D212",
+      # mutual exclusive rules to D211 and D212
+    "COM812",
+      # ruff advises against it
+    "FBT",
+      # there are valid use cases for using boolean arguments
+    ]
