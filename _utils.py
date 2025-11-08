@@ -1,3 +1,4 @@
+import logging
 import sys
 from pathlib import Path
 
@@ -8,6 +9,17 @@ from requests.exceptions import ConnectTimeout
 
 HTTP_NOT_FOUND = 404
 HTTP_NOT_AUTHORIZED = 401
+
+
+def logger() -> logging.Logger:
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    )
+    return logging.getLogger("time_tracker")
+
+
+logging = logger()
 
 
 def resource_path(relative_path: str) -> Path:
@@ -51,6 +63,7 @@ def JiraWriteLog(cfg: dict, ticket: str, duration: int) -> bool:
     try:
         jira = getJiraInstance(cfg["url"], cfg["uid"])
     except Exception as e:
+        logging.exception("Error when creating work log")
         QtWidgets.QMessageBox.critical(None, "Jira Connection Error", str(e), QtWidgets.QMessageBox.Ok)
         return False
     try:
@@ -72,6 +85,7 @@ def JiraWriteLog(cfg: dict, ticket: str, duration: int) -> bool:
             )
         return False
     except Exception as e:
+        logging.exception("Error when creating work log")
         QtWidgets.QMessageBox.critical(None, "Work Log Creation Error", str(e), QtWidgets.QMessageBox.Ok)
         return False
     return True
