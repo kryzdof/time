@@ -17,7 +17,7 @@ import win32process
 from PySide6 import QtCore, QtGui, QtWidgets
 
 import _dialogs as dialogs
-from _utils import JiraWriteLog, minutesToTime, resource_path, timeToMinutes
+from _utils import JiraWriteLog, logging, minutesToTime, resource_path, timeToMinutes
 
 version = "replace me for real version"
 
@@ -314,8 +314,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 wp = WorkPackage(wpJson["name"], wpJson["ticket"], wpJson["loggedTime"])
                 wp.triggered.connect(self.stopAllTracking)
                 workPackages.append(wp)
-        except Exception as e:
-            print(e)
+        except Exception:  # noqa: BLE001 - this should be okay for ruff because it is logged as exception with traceback
+            logging.exception("Could not load work packages")
         return workPackages
 
     def saveWorkPackages(self) -> None:
@@ -879,11 +879,11 @@ class WorkPackageWidget(QtWidgets.QWidget):
         loggedTime = int(self.getTotalTime())
         if wp.ticket and loggedTime:
             if JiraWriteLog(mainWindow.config, wp.ticket, loggedTime):
-                print("log written - deleting logged time.")
+                logging.info("log written - deleting logged time.")
                 wp.resetTime()
                 mainWindow.saveWorkPackages()
         else:
-            print("no ticket or time to log.")
+            logging.info("no ticket or time to log.")
 
 
 class WorkPackageView(QtWidgets.QDialog):
@@ -899,7 +899,6 @@ class WorkPackageView(QtWidgets.QDialog):
         wps = self.parent().workPackages
         self.splitter = QtWidgets.QVBoxLayout()
         for wp in wps:
-            print(f"workpackage {wp}")
             self.splitter.addWidget(WorkPackageWidget(self, wp))
         self.splitter.addStretch(100)
         scrollArea = QtWidgets.QScrollArea()
@@ -1111,13 +1110,13 @@ def start_GUI() -> None:
                 )
             if QtWidgets.QMessageBox.No == ret:
                 start = False
-                print("Aborted starting")
+                logging.info("Aborted starting")
             if QtWidgets.QMessageBox.Open == ret:
                 start = False
                 shell = win32com.client.Dispatch("WScript.Shell")
                 shell.SendKeys("%")
                 win32gui.SetForegroundWindow(window)
-                print("Aborted starting - Showed other instance instead")
+                logging.info("Aborted starting - Showed other instance instead")
 
     if start:
         lockfile.write_text(str(os.getpid()))

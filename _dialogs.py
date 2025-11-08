@@ -7,7 +7,7 @@ import keyring
 from keyring.backends.Windows import WinVaultKeyring
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from _utils import getJiraInstance, minutesToTime, resource_path, timeToMinutes
+from _utils import getJiraInstance, logging, minutesToTime, resource_path, timeToMinutes
 
 keyring.set_keyring(WinVaultKeyring())
 
@@ -478,8 +478,10 @@ class SettingsDialog(QtWidgets.QDialog):
                     "Connection to Jira established\n User and Password accepted",
                     QtWidgets.QMessageBox.Ok,
                 )
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 - this should be okay for ruff because it is logged as exception with traceback
+                logging.exception("Error when verifying Jira connection")
                 QtWidgets.QMessageBox.warning(self, "Jira Connection Error", str(e), QtWidgets.QMessageBox.Ok)
+
         else:
             QtWidgets.QMessageBox.warning(
                 self,
@@ -501,8 +503,8 @@ class SettingsDialog(QtWidgets.QDialog):
         try:
             with settings.open() as fp:
                 config = json.load(fp)
-        except Exception as e:
-            print(f"Using default config - Couldn't load from file: {e}")
+        except Exception:  # noqa: BLE001 - this should be okay for ruff because it is logged as exception with traceback
+            logging.exception("Using default config - Couldn't load from file")
         return config
 
     def getConfig(self) -> dict:
