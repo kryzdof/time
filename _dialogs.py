@@ -455,12 +455,13 @@ class SettingsDialog(QtWidgets.QDialog):
         cfg["dailyOfficePercentageAutoCalc"] = self.dailyOfficePercentageCheckBox.isChecked()
         cfg["dailyOfficePercentage"] = self.dailyOfficePercentage.value()
         cfg["url"] = self.jiraUrlLE.text().rstrip("/")
-        if cfg["uid"] != self.uidLE.text() and keyring.get_password("jiraconnection", cfg["uid"]):
+        if cfg["uid"] and cfg["uid"] != self.uidLE.text() and keyring.get_password("jiraconnection", cfg["uid"]):
             keyring.delete_password("jiraconnection", cfg["uid"])
         cfg["uid"] = self.uidLE.text()
+        if cfg["uid"]:
+            keyring.set_password("jiraconnection", cfg["uid"], self.passwordLE.text())
         cfg["wpLocation"] = self.workPackageLocationCombo.currentIndex()
         cfg["wpActive"] = self.workPackageOnStartUpActive.isChecked()
-        keyring.set_password("jiraconnection", cfg["uid"], self.passwordLE.text())
         self.saveConfig(cfg)
         super().accept()
 
