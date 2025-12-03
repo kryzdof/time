@@ -13,9 +13,6 @@ multi-ecosystem-groups:
 updates:
   - package-ecosystem: "pip" # See documentation for possible values
     directory: "/" # Location of package manifests
-    ignore:
-      - dependency-name: "pefile"
-        versions: ["2024.8.26"]
     patterns: ['*']
     multi-ecosystem-group: "python"
 
@@ -23,9 +20,6 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "weekly"
-    ignore:
-      - dependency-name: "pefile"
-        versions: ["2024.8.26"]
     patterns: ['*']
     multi-ecosystem-group: "python"
 
