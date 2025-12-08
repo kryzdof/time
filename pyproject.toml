@@ -16,9 +16,9 @@ dependencies = [
 [dependency-groups]
 dev = [
     "flake8==7.3.0",
-    "pytest==9.0.1",
+    "pytest==9.0.2",
     "pytest-qt==4.5.0",
-    "ruff==0.14.7",
+    "ruff==0.14.8",
 ]
 
 [tool.ruff]
