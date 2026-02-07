@@ -7,7 +7,7 @@ requires-python = ">=3.13"
 dependencies = [
     "jira==3.10.5",
     "keyring==25.7.0",
-    "psutil==7.1.3",
+    "psutil==7.2.0",
     "pyinstaller==6.17.0",
     "pyside6==6.10.1",
     "pywin32==311",
