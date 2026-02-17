@@ -8,7 +8,7 @@ dependencies = [
     "jira==3.10.5",
     "keyring==25.7.0",
     "psutil==7.2.2",
-    "pyinstaller==6.18.0",
+    "pyinstaller==6.19.0",
     "pyside6==6.10.2",
     "pywin32==311",
 ]
@@ -18,7 +18,7 @@ dev = [
     "flake8==7.3.0",
     "pytest==9.0.2",
     "pytest-qt==4.5.0",
-    "ruff==0.15.0",
+    "ruff==0.15.1",
 ]
 
 [tool.ruff]
