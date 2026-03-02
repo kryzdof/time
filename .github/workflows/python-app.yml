@@ -43,7 +43,7 @@ jobs:
         python -c "import shutil; shutil.make_archive('distFolder', 'zip', 'dist/times')"
 
     - name: archive zipfile
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: distFolder
         path: distFolder.zip
