@@ -33,7 +33,7 @@ jobs:
       run: uv run pyinstaller times.spec -y
 
     - name: Package with Inno Setup
-      uses: Minionguyjpro/Inno-Setup-Action@v1.2.7
+      uses: Minionguyjpro/Inno-Setup-Action@v1.2.8
       with:
         path: times.iss
         options: /O+
