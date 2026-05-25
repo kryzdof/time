@@ -1150,7 +1150,7 @@ def findWindow(pid: int) -> int | None:
     top_windows = []
     win32gui.EnumWindows(windowEnumerationHandler, top_windows)
     for i in top_windows:
-        if pid == i[2] and i[1] == "UltraTime":
+        if pid == i[2] and i[1].startswith("Times "):
             result = i[0]
     return result
 
