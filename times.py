@@ -1083,40 +1083,53 @@ def start_GUI() -> None:
     app.setWindowIcon(QtGui.QPixmap(resource_path("time.png")))
     app.setQuitOnLastWindowClosed(False)
 
-    lockfile = Path("lockfile")
     start = True
+    # look for any lockfile
+    alreadyRunning = False
+    p = Path()
+    for file in p.iterdir():
+        if file.is_file and file.name.startswith("lockfile"):
+            with file.open("r") as fp:
+                pid = int(fp.read())
+                if psutil.pid_exists(pid) and psutil.Process(pid).name() in ["times.exe", "python.exe"]:
+                    alreadyRunning = True
+                    window = findWindow(pid)
+                    break
+                file.unlink()
+
+    lockfile = Path(f"lockfile_{time.time()}")
     if lockfile.exists():
-        with lockfile.open("r") as fp:
-            pid = int(fp.read())
-        if psutil.pid_exists(pid) and psutil.Process(pid).name() in ["times.exe", "python.exe"]:
-            window = findWindow(pid)
-            if window:
-                ret = QtWidgets.QMessageBox.warning(
-                    QtWidgets.QWidget(),
-                    "UltraTime already running",
-                    "Do you want to start a second instance?\n\n"
-                    "It might lead to inconsistencies or overwriting of time data!\n"
-                    "Click open to activate the first instance",
-                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No | QtWidgets.QMessageBox.Open,
-                    QtWidgets.QMessageBox.Open,
-                )
-            else:
-                ret = QtWidgets.QMessageBox.warning(
-                    QtWidgets.QWidget(),
-                    "UltraTime already running",
-                    "Do you want to start a second instance?\n\nIt might lead to inconsistencies or overwriting of time data!",
-                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-                    QtWidgets.QMessageBox.No,
-                )
-            if QtWidgets.QMessageBox.No == ret:
-                start = False
-                logging.info("Aborted starting")
-            if QtWidgets.QMessageBox.Open == ret:
-                start = False
-                shell = win32com.client.Dispatch("WScript.Shell")
-                shell.SendKeys("%")
-                win32gui.SetForegroundWindow(window)
-                logging.info("Aborted starting - Showed other instance instead")
+        # fix possible unique name conflict
+        time.sleep(1)
+        lockfile = Path(f"lockfile_{time.time()}")
+    if alreadyRunning:
+        if window:
+            ret = QtWidgets.QMessageBox.warning(
+                QtWidgets.QWidget(),
+                "Times already running",
+                "Do you want to start a second instance?\n\n"
+                "It might lead to inconsistencies or overwriting of time data!\n"
+                "Click open to activate the first instance",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No | QtWidgets.QMessageBox.Open,
+                QtWidgets.QMessageBox.Open,
+            )
+        else:
+            ret = QtWidgets.QMessageBox.warning(
+                QtWidgets.QWidget(),
+                "Times already running",
+                "Do you want to start a second instance?\n\nIt might lead to inconsistencies or overwriting of time data!",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                QtWidgets.QMessageBox.No,
+            )
+        if QtWidgets.QMessageBox.No == ret:
+            start = False
+            logging.info("Aborted starting")
+        if QtWidgets.QMessageBox.Open == ret:
+            start = False
+            shell = win32com.client.Dispatch("WScript.Shell")
+            shell.SendKeys("%")
+            win32gui.SetForegroundWindow(window)
+            logging.info("Aborted starting - Showed other instance instead")
 
     if start:
         lockfile.write_text(str(os.getpid()))
@@ -1141,7 +1154,7 @@ def findWindow(pid: int) -> int | None:
     top_windows = []
     win32gui.EnumWindows(windowEnumerationHandler, top_windows)
     for i in top_windows:
-        if pid == i[2] and i[1] == "UltraTime":
+        if pid == i[2] and i[1].startswith("Times "):
             result = i[0]
     return result
 
