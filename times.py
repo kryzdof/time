@@ -1098,6 +1098,10 @@ def start_GUI() -> None:
                 file.unlink()
 
     lockfile = Path(f"lockfile_{time.time()}")
+    if lockfile.exists():
+        # fix possible unique name conflict
+        time.sleep(1)
+        lockfile = Path(f"lockfile_{time.time()}")
     if alreadyRunning:
         if window:
             ret = QtWidgets.QMessageBox.warning(
