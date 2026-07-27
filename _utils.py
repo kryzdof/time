@@ -94,6 +94,8 @@ def JiraWriteLog(cfg: dict, ticket: str, duration: int) -> bool:
 def timeToMinutes(qtime: QtCore.QTime) -> int:
     return qtime.hour() * 60 + qtime.minute()
 
+def timeToHourString(qtime: QtCore.QTime) -> str:
+    return f"{qtime.hour() + (qtime.minute() / 60):.2f}"
 
 def minutesToTime(minutes: int) -> QtCore.QTime:
     return QtCore.QTime(minutes // 60, minutes % 60)

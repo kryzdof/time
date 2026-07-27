@@ -264,7 +264,8 @@ class SettingsDialog(QtWidgets.QDialog):
 
         lunchSettingsWidget, self.lunchTime = self.createLunchSettingsWidget()
 
-        generalSettingsWidget, self.autoCalcEndTime, self.hourWrapAround, self.minimize = self.createGeneralSettingsWidget()
+        generalSettingsWidget, self.autoCalcEndTime, self.hourWrapAround, self.minimize, self.timeLabelsInHours = (
+            self.createGeneralSettingsWidget())
 
         homeOfficeSettingsWidget, self.officePercentage, self.dailyOfficePercentageCheckBox, self.dailyOfficePercentage = (
             self.createHomeOfficeSettingsWidget()
@@ -324,7 +325,7 @@ class SettingsDialog(QtWidgets.QDialog):
 
     def createGeneralSettingsWidget(
         self,
-    ) -> (QtWidgets.QGroupBox, QtWidgets.QCheckBox, QtWidgets.QCheckBox, QtWidgets.QCheckBox):
+    ) -> (QtWidgets.QGroupBox, QtWidgets.QCheckBox, QtWidgets.QCheckBox, QtWidgets.QCheckBox, QtWidgets.QCheckBox):
         """Create the general settings widget."""
         generalSettingsLayout = QtWidgets.QGridLayout()
         generalSettingsWidget = QtWidgets.QGroupBox("General Settings")
@@ -348,12 +349,19 @@ class SettingsDialog(QtWidgets.QDialog):
         minimize.setToolTip(minimizeText)
         minimize.setWhatsThis(minimizeText)
 
+        timeLabelsInHours = QtWidgets.QCheckBox("Show time labels as hours")
+        timeLabelsInHours.setChecked(self.config["timeLabelsInHours"])
+        timeLabelsInHoursText = "The time labels in the overview will be shown as H.hh instead of H:mm (8.5 == 8:30)"
+        timeLabelsInHours.setToolTip(timeLabelsInHoursText)
+        timeLabelsInHours.setWhatsThis(timeLabelsInHoursText)
+
         generalSettingsLayout.addWidget(autoCalcEndTime, 0, 0)
         generalSettingsLayout.addWidget(hourWrapAround, 1, 0)
         generalSettingsLayout.addWidget(minimize, 2, 0)
+        generalSettingsLayout.addWidget(timeLabelsInHours, 3, 0)
 
         generalSettingsWidget.setLayout(generalSettingsLayout)
-        return generalSettingsWidget, autoCalcEndTime, hourWrapAround, minimize
+        return generalSettingsWidget, autoCalcEndTime, hourWrapAround, minimize, timeLabelsInHours
 
     def createHomeOfficeSettingsWidget(
         self,
@@ -451,6 +459,7 @@ class SettingsDialog(QtWidgets.QDialog):
         cfg["connectHoursAndMinutes"] = self.hourWrapAround.isChecked()
         cfg["forecastEndTimes"] = self.autoCalcEndTime.isChecked()
         cfg["minimize"] = self.minimize.isChecked()
+        cfg["timeLabelsInHours"] = self.timeLabelsInHours.isChecked()
         cfg["officePercentage"] = self.officePercentage.value()
         cfg["dailyOfficePercentageAutoCalc"] = self.dailyOfficePercentageCheckBox.isChecked()
         cfg["dailyOfficePercentage"] = self.dailyOfficePercentage.value()
@@ -519,6 +528,7 @@ class SettingsDialog(QtWidgets.QDialog):
             "connectHoursAndMinutes": config.get("connectHoursAndMinutes", False),
             "forecastEndTimes": config.get("forecastEndTimes", True),
             "minimize": config.get("minimize", True),
+            "timeLabelsInHours": config.get("timeLabelsInHours", False),
             "officePercentage": config.get("officePercentage", 40),
             "dailyOfficePercentageAutoCalc": config.get("dailyOfficePercentageAutoCalc", True),
             "dailyOfficePercentage": config.get("dailyOfficePercentage", 0),
