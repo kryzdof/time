@@ -264,7 +264,8 @@ class SettingsDialog(QtWidgets.QDialog):
 
         lunchSettingsWidget, self.lunchTime = self.createLunchSettingsWidget()
 
-        generalSettingsWidget, self.autoCalcEndTime, self.hourWrapAround, self.minimize, self.timeLabelsInHours = self.createGeneralSettingsWidget()
+        generalSettingsWidget, self.autoCalcEndTime, self.hourWrapAround, self.minimize, self.timeLabelsInHours = (
+            self.createGeneralSettingsWidget())
 
         homeOfficeSettingsWidget, self.officePercentage, self.dailyOfficePercentageCheckBox, self.dailyOfficePercentage = (
             self.createHomeOfficeSettingsWidget()

@@ -17,7 +17,7 @@ import win32process
 from PySide6 import QtCore, QtGui, QtWidgets
 
 import _dialogs as dialogs
-from _utils import JiraWriteLog, logging, minutesToTime, resource_path, timeToMinutes, timeToHourString
+from _utils import JiraWriteLog, logging, minutesToTime, resource_path, timeToHourString, timeToMinutes
 
 version = "replace me for real version"
 
