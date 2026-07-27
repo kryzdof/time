@@ -17,7 +17,7 @@ import win32process
 from PySide6 import QtCore, QtGui, QtWidgets
 
 import _dialogs as dialogs
-from _utils import JiraWriteLog, logging, minutesToTime, resource_path, timeToMinutes
+from _utils import JiraWriteLog, logging, minutesToTime, resource_path, timeToMinutes, timeToHourString
 
 version = "replace me for real version"
 
@@ -424,7 +424,11 @@ class MainWindow(QtWidgets.QMainWindow):
     def updateDateLabels(self) -> None:
         """Update all date labels and calculations for the current month."""
         dayString = ["", *list(calendar.day_abbr)]
-        hours = [x.toString("h:mm") for x in self.config["hours"]]
+        if self.config["timeLabelsInHours"]:
+            hours = [timeToHourString(x) for x in self.config["hours"]]
+        else:
+            hours = [x.toString("h:mm") for x in self.config["hours"]]
+
         zero = QtCore.QTime(0, 0)
         seconds = [zero.secsTo(x) for x in self.config["hours"]]
 
@@ -491,10 +495,16 @@ class MainWindow(QtWidgets.QMainWindow):
             diff -= self.config["lunchBreak"] * 60
         if diff < 0:
             diffTime = QtCore.QTime(0, 0).addSecs(-diff)
-            self.diffTimeLabels[x].setText(diffTime.toString("-h:mm"))
+            if self.config["timeLabelsInHours"]:
+                self.diffTimeLabels[x].setText("-" + timeToHourString(diffTime))
+            else:
+                self.diffTimeLabels[x].setText(diffTime.toString("-h:mm"))
         elif diff > 0:
             diffTime = QtCore.QTime(0, 0).addSecs(diff)
-            self.diffTimeLabels[x].setText(diffTime.toString("h:mm"))
+            if self.config["timeLabelsInHours"]:
+                self.diffTimeLabels[x].setText(timeToHourString(diffTime))
+            else:
+                self.diffTimeLabels[x].setText(diffTime.toString("h:mm"))
         else:
             self.diffTimeLabels[x].hide()
 
@@ -577,7 +587,10 @@ class MainWindow(QtWidgets.QMainWindow):
             if self.breakCheckBoxes[index].isChecked():
                 diff -= self.config["lunchBreak"] * 60
             diffTime = QtCore.QTime(0, 0).addSecs(diff)
-            self.fullTimeLabels[index].setText(diffTime.toString("hh:mm"))
+            if self.config["timeLabelsInHours"]:
+                self.fullTimeLabels[index].setText(timeToHourString(diffTime))
+            else:
+                self.fullTimeLabels[index].setText(diffTime.toString("hh:mm"))
             # mark the time red if it is more than 10 hours
             if diff > MAXIMUM_DAILY_ALLOWED_WORK_HOURS * 3600:
                 self.fullTimeLabels[index].setStyleSheet("color: red")
