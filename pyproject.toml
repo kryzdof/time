@@ -42,4 +42,5 @@ ignore = [
       # ruff advises against it
     "FBT",
       # there are valid use cases for using boolean arguments
+    "CPY001",
     ]
