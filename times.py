@@ -57,6 +57,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.settings = dialogs.SettingsDialog(self)
         self.loadMonth()
         self.config = self.settings.getConfig()
+        self.initializeEndTimePopup()
         self.workPackages = self.loadWorkPackages()
         self.workPackageView = WorkPackageView(self)
         self.workpackagesButton.setChecked(self.config["wpActive"])
@@ -73,11 +74,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setCentralWidget(self.hSplitter)
 
         self.app = app
+        self.trayIcon = None
         if self.app:
             self.app.setQuitOnLastWindowClosed(not self.config["minimize"])
             self.menu = None
             self.trayActions = {}
-            self.trayIcon = None
             self.createTray()
 
         self.updateDateLabels()
@@ -98,6 +99,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.datetime.dateChanged.connect(self.onMonthChanged)
         layout.addWidget(self.datetime, 0, 0, 1, 3)
         self.oldDateTime = self.datetime.date()
+
+        self.popupTodayButton = QtWidgets.QToolButton()
+        self.popupTodayButton.setIcon(QtGui.QIcon(resource_path("time.png")))
+        self.popupTodayButton.setCheckable(True)
+        self.popupTodayButton.setAutoRaise(True)
+        self.popupTodayButton.toggled.connect(self.setPopupTodayEnabled)
+        layout.addWidget(self.popupTodayButton, 0, 3)
 
         self.onSitePercentage = QtWidgets.QLabel("'HO%")
         self.onSitePercentage.setToolTip("Display the % of office days in the complete month")
@@ -208,6 +216,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def cyclicFunction(self) -> None:
         """Update work packages and UI. Saves the workpackage data every 60 calls."""
         self.cyclicCounter = self.cyclicCounter % 60 + 1
+        self.checkEndTimePopup()
         self.colorDates()
         self.workPackageView.updateChildrenData()
         for wp in self.workPackages:
@@ -215,6 +224,69 @@ class MainWindow(QtWidgets.QMainWindow):
                 wp.setText(str(wp))
                 if self.cyclicCounter // 60:
                     self.saveWorkPackages()
+
+    def initializeEndTimePopup(self) -> None:
+        """Initialize the daily popup state from its persistent setting."""
+        self.popupTodayEnabled = self.config["popupAtEndTime"]
+        self.popupTodayButton.setChecked(self.popupTodayEnabled)
+        self.updatePopupTodayButton()
+        self.popupShownToday = False
+        self.lastPopupCheckDate = QtCore.QDate.currentDate()
+        self.lastPopupCheckTime = QtCore.QTime.currentTime()
+
+    def updatePopupTodayButton(self) -> None:
+        """Explain whether the popup is controlled for today or in settings."""
+        if self.config["popupAtEndTime"]:
+            self.popupTodayButton.setToolTip("End-time popup is always enabled. Change this in Settings.")
+            self.popupTodayButton.setStatusTip("Always enabled in Settings")
+        else:
+            self.popupTodayButton.setToolTip(
+                "Show a popup when today's end time is reached (today only; resets tomorrow)"
+            )
+            self.popupTodayButton.setStatusTip("End-time popup for today")
+
+    def setPopupTodayEnabled(self, enabled: bool) -> None:
+        """Enable or disable the end-time popup for today only."""
+        if self.config["popupAtEndTime"]:
+            if not enabled:
+                self.popupTodayButton.setChecked(True)
+            return
+        self.popupTodayEnabled = enabled
+
+    def checkEndTimePopup(self) -> None:
+        """Show the end-time notification once when today's end time is reached."""
+        today = QtCore.QDate.currentDate()
+        now = QtCore.QTime.currentTime()
+        if today != self.lastPopupCheckDate:
+            self.lastPopupCheckDate = today
+            self.lastPopupCheckTime = now
+            self.popupShownToday = False
+            self.popupTodayEnabled = self.config["popupAtEndTime"]
+            self.popupTodayButton.setChecked(self.popupTodayEnabled)
+            self.updatePopupTodayButton()
+            return
+
+        previousTime = self.lastPopupCheckTime
+        self.lastPopupCheckTime = now
+        if self.popupShownToday or not (self.config["popupAtEndTime"] or self.popupTodayEnabled):
+            return
+
+        selectedDate = self.datetime.date()
+        if selectedDate.year() != today.year() or selectedDate.month() != today.month():
+            return
+
+        endTime = self.endtimeTime[today.day() - 1].time()
+        if not endTime.msecsSinceStartOfDay() or not previousTime < endTime <= now:
+            return
+
+        self.popupShownToday = True
+        if self.trayIcon:
+            self.trayIcon.showMessage(
+                "Times",
+                "Your end time for today has been reached.",
+                QtWidgets.QSystemTrayIcon.Information,
+                10000,
+            )
 
     def stopAllTracking(self, checked: bool | None = None) -> None:
         """Stop tracking on all work packages."""
@@ -357,6 +429,8 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.settings.exec():
             oldConfig = self.config
             self.config = self.settings.getConfig()
+            self.popupTodayButton.setChecked(self.config["popupAtEndTime"] or self.popupTodayEnabled)
+            self.updatePopupTodayButton()
             wplChanged = self.config["wpLocation"] != oldConfig["wpLocation"]
             self.updateDateLabels()
             self.app.setQuitOnLastWindowClosed(not self.config["minimize"])
