@@ -264,8 +264,14 @@ class SettingsDialog(QtWidgets.QDialog):
 
         lunchSettingsWidget, self.lunchTime = self.createLunchSettingsWidget()
 
-        generalSettingsWidget, self.autoCalcEndTime, self.hourWrapAround, self.minimize, self.timeLabelsInHours = (
-            self.createGeneralSettingsWidget())
+        (
+            generalSettingsWidget,
+            self.autoCalcEndTime,
+            self.hourWrapAround,
+            self.minimize,
+            self.timeLabelsInHours,
+            self.popupAtEndTime,
+        ) = self.createGeneralSettingsWidget()
 
         homeOfficeSettingsWidget, self.officePercentage, self.dailyOfficePercentageCheckBox, self.dailyOfficePercentage = (
             self.createHomeOfficeSettingsWidget()
@@ -325,7 +331,14 @@ class SettingsDialog(QtWidgets.QDialog):
 
     def createGeneralSettingsWidget(
         self,
-    ) -> (QtWidgets.QGroupBox, QtWidgets.QCheckBox, QtWidgets.QCheckBox, QtWidgets.QCheckBox, QtWidgets.QCheckBox):
+    ) -> (
+        QtWidgets.QGroupBox,
+        QtWidgets.QCheckBox,
+        QtWidgets.QCheckBox,
+        QtWidgets.QCheckBox,
+        QtWidgets.QCheckBox,
+        QtWidgets.QCheckBox,
+    ):
         """Create the general settings widget."""
         generalSettingsLayout = QtWidgets.QGridLayout()
         generalSettingsWidget = QtWidgets.QGroupBox("General Settings")
@@ -355,13 +368,20 @@ class SettingsDialog(QtWidgets.QDialog):
         timeLabelsInHours.setToolTip(timeLabelsInHoursText)
         timeLabelsInHours.setWhatsThis(timeLabelsInHoursText)
 
+        popupAtEndTime = QtWidgets.QCheckBox("Always show popup at end time")
+        popupAtEndTime.setChecked(self.config["popupAtEndTime"])
+        popupAtEndTimeText = "Show a desktop notification when the forecast or entered end time is reached each day"
+        popupAtEndTime.setToolTip(popupAtEndTimeText)
+        popupAtEndTime.setWhatsThis(popupAtEndTimeText)
+
         generalSettingsLayout.addWidget(autoCalcEndTime, 0, 0)
         generalSettingsLayout.addWidget(hourWrapAround, 1, 0)
         generalSettingsLayout.addWidget(minimize, 2, 0)
         generalSettingsLayout.addWidget(timeLabelsInHours, 3, 0)
+        generalSettingsLayout.addWidget(popupAtEndTime, 4, 0)
 
         generalSettingsWidget.setLayout(generalSettingsLayout)
-        return generalSettingsWidget, autoCalcEndTime, hourWrapAround, minimize, timeLabelsInHours
+        return generalSettingsWidget, autoCalcEndTime, hourWrapAround, minimize, timeLabelsInHours, popupAtEndTime
 
     def createHomeOfficeSettingsWidget(
         self,
@@ -460,6 +480,7 @@ class SettingsDialog(QtWidgets.QDialog):
         cfg["forecastEndTimes"] = self.autoCalcEndTime.isChecked()
         cfg["minimize"] = self.minimize.isChecked()
         cfg["timeLabelsInHours"] = self.timeLabelsInHours.isChecked()
+        cfg["popupAtEndTime"] = self.popupAtEndTime.isChecked()
         cfg["officePercentage"] = self.officePercentage.value()
         cfg["dailyOfficePercentageAutoCalc"] = self.dailyOfficePercentageCheckBox.isChecked()
         cfg["dailyOfficePercentage"] = self.dailyOfficePercentage.value()
@@ -529,6 +550,7 @@ class SettingsDialog(QtWidgets.QDialog):
             "forecastEndTimes": config.get("forecastEndTimes", True),
             "minimize": config.get("minimize", True),
             "timeLabelsInHours": config.get("timeLabelsInHours", False),
+            "popupAtEndTime": config.get("popupAtEndTime", False),
             "officePercentage": config.get("officePercentage", 40),
             "dailyOfficePercentageAutoCalc": config.get("dailyOfficePercentageAutoCalc", True),
             "dailyOfficePercentage": config.get("dailyOfficePercentage", 0),
