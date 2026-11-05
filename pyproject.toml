@@ -8,8 +8,8 @@ dependencies = [
     "jira==3.10.5",
     "keyring==25.7.0",
     "psutil==7.2.2",
-    "pyinstaller==6.22.2",
-    "pyside6==6.11.2",
+    "pyinstaller==6.22.3",
+    "pyside6==6.12.0",
     "pywin32==312",
 ]
 
